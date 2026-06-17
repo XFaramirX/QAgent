@@ -1,0 +1,41 @@
+{
+  "commandsRun": [
+    {
+      "command": "C:\\Program Files\\nodejs\\node.exe node_modules/@playwright/cli/playwright-cli.js -s=qasimple-qa-002 open https://www.qa-practice.com/elements/input/simple",
+      "exitCode": 0,
+      "durationMs": 6934
+    },
+    {
+      "command": "C:\\Program Files\\nodejs\\node.exe node_modules/@playwright/cli/playwright-cli.js -s=qasimple-qa-002 snapshot --filename C:\\Users\\dabarrera\\agentsOrquestraQA\\qasimple\\tickets\\QA-002\\snapshot\\snapshot.md",
+      "exitCode": 0,
+      "durationMs": 166
+    },
+    {
+      "command": "C:\\Program Files\\nodejs\\node.exe node_modules/@playwright/cli/playwright-cli.js -s=qasimple-qa-002 screenshot --filename C:\\Users\\dabarrera\\agentsOrquestraQA\\qasimple\\tickets\\QA-002\\snapshot\\page.png --full-page",
+      "exitCode": 0,
+      "durationMs": 5164
+    },
+    {
+      "command": "C:\\Program Files\\nodejs\\node.exe node_modules/@playwright/cli/playwright-cli.js -s=qasimple-qa-002 eval () => document.documentElement.outerHTML --filename C:\\Users\\dabarrera\\agentsOrquestraQA\\qasimple\\tickets\\QA-002\\snapshot\\page.html",
+      "exitCode": 0,
+      "durationMs": 726
+    },
+    {
+      "command": "C:\\Program Files\\nodejs\\node.exe node_modules/@playwright/cli/playwright-cli.js -s=qasimple-qa-002 console --raw",
+      "exitCode": 0,
+      "durationMs": 262
+    },
+    {
+      "command": "C:\\Program Files\\nodejs\\node.exe node_modules/@playwright/cli/playwright-cli.js -s=qasimple-qa-002 requests --raw",
+      "exitCode": 0,
+      "durationMs": 169
+    },
+    {
+      "command": "C:\\Program Files\\nodejs\\node.exe node_modules/@playwright/cli/playwright-cli.js -s=qasimple-qa-002 eval () => ({ url: location.href, title: document.title, viewport: { width: window.innerWidth, height: window.innerHeight } }) --filename C:\\Users\\dabarrera\\agentsOrquestraQA\\qasimple\\tickets\\QA-002\\snapshot\\.meta.tmp",
+      "exitCode": 0,
+      "durationMs": 676
+    }
+  ],
+  "retries": 0,
+  "retryReasons": []
+}

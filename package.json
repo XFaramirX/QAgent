@@ -1,0 +1,17 @@
+{
+    "name": "qasimple",
+    "version": "1.0.0",
+    "description": "Minimal QA workspace using Copilot agents for requirement analysis and Playwright test generation",
+    "scripts": {
+        "test": "playwright test",
+        "test:ui": "playwright test --ui",
+        "test:ticket": "node scripts/run-ticket-tests.js",
+        "snapshot": "node scripts/capture-snapshot.js",
+        "log:agent": "node scripts/write-token-log.js",
+        "sync:ticket": "node scripts/sync-ticket-result.js"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.60.0",
+        "@playwright/cli": "^0.1.14"
+    }
+}

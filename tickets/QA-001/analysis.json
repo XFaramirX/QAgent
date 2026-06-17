@@ -1,0 +1,167 @@
+{
+  "schemaVersion": "1.0.0",
+  "agentName": "requirement-analyst",
+  "featureId": "QA-001",
+  "featureName": "Simple Button Click",
+  "targetUrl": "https://www.qa-practice.com/elements/button/simple",
+  "snapshotRef": "tickets/QA-001/snapshot/",
+  "summary": "Snapshot evidence shows the page renders a single native submit control labeled 'Click' as <input type='submit' id='submit-id-submit'> inside a POST form. Activating it keeps the same URL, triggers a navigation lifecycle caused by form submission, and displays the visible feedback text 'Submitted'. Keyboard activation is supported by native control behavior.",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-001",
+      "criterion": "The page loads and displays a single native submit control labeled 'Click'",
+      "testable": true
+    },
+    {
+      "id": "AC-002",
+      "criterion": "The control is visible and enabled by default",
+      "testable": true
+    },
+    {
+      "id": "AC-003",
+      "criterion": "Clicking the control submits the form and displays the visible confirmation text 'Submitted'",
+      "testable": true
+    },
+    {
+      "id": "AC-004",
+      "criterion": "Submission keeps the user on the same page URL even though a form-submit navigation lifecycle occurs",
+      "testable": true
+    },
+    {
+      "id": "AC-005",
+      "criterion": "The control is accessible via keyboard (Tab to focus, Enter and Space to activate)",
+      "testable": true
+    },
+    {
+      "id": "AC-006",
+      "criterion": "The interactive element is native form markup (<input type='submit'>), not a styled link",
+      "testable": true
+    }
+  ],
+  "testScenarios": [
+    {
+      "id": "TS-001",
+      "type": "positive",
+      "scenario": "Submit control is present and enabled on page load",
+      "steps": [
+        "Navigate to https://www.qa-practice.com/elements/button/simple",
+        "Locate the native control labeled 'Click'"
+      ],
+      "expectedResult": "A single visible enabled control labeled 'Click' is present",
+      "linkedCriteria": [
+        "AC-001",
+        "AC-002"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "TS-002",
+      "type": "positive",
+      "scenario": "Clicking the submit control displays the real confirmation text",
+      "steps": [
+        "Navigate to https://www.qa-practice.com/elements/button/simple",
+        "Click the control labeled 'Click'",
+        "Observe the rendered result area"
+      ],
+      "expectedResult": "The page shows visible confirmation text exactly equal to 'Submitted'",
+      "linkedCriteria": [
+        "AC-003"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "TS-003",
+      "type": "positive",
+      "scenario": "Form submission keeps the same page URL",
+      "steps": [
+        "Navigate to https://www.qa-practice.com/elements/button/simple",
+        "Record the current URL",
+        "Click the control labeled 'Click'",
+        "Wait for the resulting page state to settle"
+      ],
+      "expectedResult": "The final URL remains https://www.qa-practice.com/elements/button/simple even though a form submit lifecycle occurs",
+      "linkedCriteria": [
+        "AC-004"
+      ],
+      "priority": "medium"
+    },
+    {
+      "id": "TS-004",
+      "type": "accessibility",
+      "scenario": "Submit control is reachable and activatable by keyboard",
+      "steps": [
+        "Navigate to https://www.qa-practice.com/elements/button/simple",
+        "Press Tab until the 'Click' control receives focus",
+        "Press Enter",
+        "Repeat from a fresh page load using Space"
+      ],
+      "expectedResult": "The control receives focus and both Enter and Space result in the same visible 'Submitted' feedback",
+      "linkedCriteria": [
+        "AC-005"
+      ],
+      "priority": "medium"
+    },
+    {
+      "id": "TS-005",
+      "type": "visual",
+      "scenario": "Interactive element is native submit markup",
+      "steps": [
+        "Navigate to https://www.qa-practice.com/elements/button/simple",
+        "Inspect the interactive element labeled 'Click'"
+      ],
+      "expectedResult": "The element is <input type='submit' id='submit-id-submit'>, not <a>",
+      "linkedCriteria": [
+        "AC-006"
+      ],
+      "priority": "low"
+    },
+    {
+      "id": "TS-006",
+      "type": "regression",
+      "scenario": "Revisiting and re-submitting does not break the page",
+      "steps": [
+        "Navigate to https://www.qa-practice.com/elements/button/simple",
+        "Click the control labeled 'Click'",
+        "Navigate back to the initial state if needed and repeat",
+        "Observe the page state after each submission"
+      ],
+      "expectedResult": "Each run ends with the same visible 'Submitted' feedback and no broken layout or error state",
+      "linkedCriteria": [
+        "AC-003",
+        "AC-004"
+      ],
+      "priority": "low"
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ASM-001",
+      "assumption": "The confirmation text is rendered in #result after the form post returns to the same route",
+      "confidence": "high"
+    },
+    {
+      "id": "ASM-002",
+      "assumption": "No authentication or session state is required to interact with the control",
+      "confidence": "high"
+    }
+  ],
+  "risks": [
+    {
+      "id": "RISK-001",
+      "risk": "A generator that assumes no navigation may under-model this page because same-URL form submit still triggers navigation events",
+      "severity": "medium",
+      "recommendation": "Assert same final URL and visible confirmation instead of assuming zero navigation lifecycle events"
+    },
+    {
+      "id": "RISK-002",
+      "risk": "The snapshot does not show post-submit DOM, only pre-submit page structure",
+      "severity": "low",
+      "recommendation": "Keep one runtime validation that confirms #result renders Submitted after activation"
+    }
+  ],
+  "questions": [],
+  "recommendation": {
+    "status": "approved",
+    "comment": "Snapshot and runtime evidence resolve the earlier ambiguity. The feature is fully automatable with exact assertions for control type and the Submitted feedback."
+  }
+}

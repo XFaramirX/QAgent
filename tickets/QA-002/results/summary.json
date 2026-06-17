@@ -1,0 +1,18 @@
+{
+  "ticketId": "QA-002",
+  "command": "C:\\Program Files\\nodejs\\node.exe C:\\Users\\dabarrera\\agentsOrquestraQA\\qasimple\\node_modules\\playwright\\cli.js test generated --reporter=list,html --output results/test-results",
+  "generatedAt": "2026-06-11T15:51:52.662Z",
+  "exitCode": 0,
+  "passed": true,
+  "counts": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0
+  },
+  "artifacts": {
+    "runLog": "tickets/QA-002/results/test-run.txt",
+    "summary": "tickets/QA-002/results/summary.json",
+    "htmlReportDir": "tickets/QA-002/playwright-report",
+    "testResultsDir": "tickets/QA-002/results/test-results"
+  }
+}

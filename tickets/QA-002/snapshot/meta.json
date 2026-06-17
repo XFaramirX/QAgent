@@ -1,0 +1,11 @@
+{
+  "url": "https://www.qa-practice.com/elements/input/simple",
+  "title": "Input Field | Text Input | QA Practice",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "ticketId": "QA-002",
+  "requestedUrl": "https://www.qa-practice.com/elements/input/simple",
+  "capturedAt": "2026-06-11T15:51:39.075Z"
+}

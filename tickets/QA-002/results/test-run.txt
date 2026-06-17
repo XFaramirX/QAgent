@@ -1,0 +1,11 @@
+
+Running 6 tests using 1 worker
+
+  ✓  1 generated\qa-002-simple-input-field.spec.ts:6:9 › QA-002 - Simple Input Field › TS-001: page load shows a visible textbox (895ms)
+  ✓  2 generated\qa-002-simple-input-field.spec.ts:13:9 › QA-002 - Simple Input Field › TS-002: textbox accepts typed text (782ms)
+  ✓  3 generated\qa-002-simple-input-field.spec.ts:23:9 › QA-002 - Simple Input Field › TS-003: keyboard-only entry and submission with Enter works (1.4s)
+  ✓  4 generated\qa-002-simple-input-field.spec.ts:47:9 › QA-002 - Simple Input Field › TS-004: non-empty submission shows a visible result (1.1s)
+  ✓  5 generated\qa-002-simple-input-field.spec.ts:59:9 › QA-002 - Simple Input Field › TS-005: empty submission behavior is exercised for clarification (729ms)
+  ✓  6 generated\qa-002-simple-input-field.spec.ts:70:9 › QA-002 - Simple Input Field › TS-006: control remains a native text input (734ms)
+
+  6 passed (6.9s)

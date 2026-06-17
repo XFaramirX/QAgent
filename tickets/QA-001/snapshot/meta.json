@@ -1,0 +1,11 @@
+{
+  "url": "https://www.qa-practice.com/elements/button/simple",
+  "title": "Buttons | Simple Button | QA Practice",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "ticketId": "QA-001",
+  "requestedUrl": "https://www.qa-practice.com/elements/button/simple",
+  "capturedAt": "2026-06-11T15:22:48.760Z"
+}

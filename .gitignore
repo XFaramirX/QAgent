@@ -1,0 +1,8 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+.playwright-cli/
+tickets/*/.playwright-cli/
+tickets/*/playwright-report/
+tickets/*/results/test-results/
