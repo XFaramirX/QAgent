@@ -2,6 +2,11 @@ import { test, expect } from '@playwright/test';
 
 const TARGET_URL = 'https://www.qa-practice.com/elements/input/simple';
 
+// Maximum number of Tab presses when navigating to the text input via keyboard.
+// The page has a nav sidebar before the main content area, so up to 20 Tabs
+// may be needed before the input receives focus.
+const MAX_TAB_ATTEMPTS = 20;
+
 test.describe('QA-003 - Simple text input field — submit & validation', () => {
     // TS-001 / AC-004: Page load shows a visible, labeled text input
     test('TS-001: page load shows a visible labeled text input', async ({ page }) => {
@@ -61,7 +66,7 @@ test.describe('QA-003 - Simple text input field — submit & validation', () => 
         const submittedValue = 'QA003_kb_flow';
 
         await test.step('Tab to the input and type a value', async () => {
-            for (let index = 0; index < 20; index += 1) {
+            for (let index = 0; index < MAX_TAB_ATTEMPTS; index += 1) {
                 await page.keyboard.press('Tab');
                 if (await textInput.evaluate((el) => el === document.activeElement)) {
                     break;
