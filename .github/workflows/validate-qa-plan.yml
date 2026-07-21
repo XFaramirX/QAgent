@@ -104,6 +104,7 @@ jobs:
         run: npm ci
 
       - name: Typecheck all spec files
-        # npx tsc --noEmit will catch type errors without running tests
-        run: npx tsc --noEmit
+        # Use the locally installed tsc from devDependencies, not npx which
+        # may resolve the unrelated 'tsc' npm package instead of typescript.
+        run: ./node_modules/.bin/tsc --noEmit
         continue-on-error: false
