@@ -14,60 +14,60 @@
  *   node scripts/ci-build-pr-body.js QA-007 42 12345678 > pr_body.md
  */
 
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 
-const [,, ticketId, issueNumber, runId] = process.argv;
+const [, , ticketId, issueNumber, runId] = process.argv;
 
-const repoRoot  = path.resolve(__dirname, '..');
+const repoRoot = path.resolve(__dirname, '..');
 const ticketDir = path.join(repoRoot, 'tickets', ticketId || 'UNKNOWN');
 
 function readSafe(p) {
-  try { return fs.readFileSync(p, 'utf8'); } catch { return null; }
+    try { return fs.readFileSync(p, 'utf8'); } catch { return null; }
 }
 
 function parseJSON(p) {
-  const raw = readSafe(p);
-  if (!raw) return null;
-  try { return JSON.parse(raw); } catch { return null; }
+    const raw = readSafe(p);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
 }
 
 // ── Read artifacts ────────────────────────────────────────────────────────────
 
 const analysis = parseJSON(path.join(ticketDir, 'analysis.json'));
-const status   = parseJSON(path.join(ticketDir, 'logs', 'status.json'));
-const results  = parseJSON(path.join(ticketDir, 'results', 'summary.json'));
+const status = parseJSON(path.join(ticketDir, 'logs', 'status.json'));
+const results = parseJSON(path.join(ticketDir, 'results', 'summary.json'));
 
 const generatedDir = path.join(ticketDir, 'generated');
 const specFiles = fs.existsSync(generatedDir)
-  ? fs.readdirSync(generatedDir).filter(f => f.endsWith('.spec.ts'))
-  : [];
+    ? fs.readdirSync(generatedDir).filter(f => f.endsWith('.spec.ts'))
+    : [];
 
 // ── Build sections ────────────────────────────────────────────────────────────
 
 const scenarioList = analysis?.scenarios?.length
-  ? analysis.scenarios
-      .map(s => `- \`${s.id || '?'}\` — ${s.title || s.name || s.description || 'Unnamed'}`)
-      .join('\n')
-  : '_No scenarios extracted_';
+    ? analysis.scenarios
+        .map(s => `- \`${s.id || '?'}\` — ${s.title || s.name || s.description || 'Unnamed'}`)
+        .join('\n')
+    : '_No scenarios extracted_';
 
 const testResultBlock = results
-  ? `\`\`\`\npassed: ${results.passed ?? '?'}  failed: ${results.failed ?? '?'}  total: ${results.total ?? '?'}\n\`\`\``
-  : '_Tests not yet run_';
+    ? `\`\`\`\npassed: ${results.passed ?? '?'}  failed: ${results.failed ?? '?'}  total: ${results.total ?? '?'}\n\`\`\``
+    : '_Tests not yet run_';
 
 const snapshotLink = analysis?.snapshotRef
-  ? `[\`${analysis.snapshotRef}\`](${analysis.snapshotRef}/snapshot.md)`
-  : '_No snapshot captured_';
+    ? `[\`${analysis.snapshotRef}\`](${analysis.snapshotRef}/snapshot.md)`
+    : '_No snapshot captured_';
 
 const specList = specFiles.length
-  ? specFiles.map(f => `- \`tickets/${ticketId}/generated/${f}\``).join('\n')
-  : '_No spec files generated_';
+    ? specFiles.map(f => `- \`tickets/${ticketId}/generated/${f}\``).join('\n')
+    : '_No spec files generated_';
 
-const analystStatus   = status?.['requirement-analyst']?.status  ?? 'unknown';
+const analystStatus = status?.['requirement-analyst']?.status ?? 'unknown';
 const generatorStatus = status?.['playwright-generator']?.status ?? 'unknown';
 const runUrl = process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY
-  ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${runId}`
-  : null;
+    ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${runId}`
+    : null;
 
 // ── Compose body ──────────────────────────────────────────────────────────────
 

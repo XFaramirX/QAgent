@@ -1,28 +1,41 @@
 # ──────────────────────────────────────────────────────────────────────────────
+
 # CODEOWNERS — QA Simple
+
 # Every pattern below requires at least one approved review before merging.
+
 #
+
 # SETUP REQUIRED:
-#   Replace @YOUR_TEAM and @YOUR_USERNAME with real GitHub team/user handles.
-#   Create the team at: Settings → People → Teams
+
+# Replace @YOUR_TEAM and @YOUR_USERNAME with real GitHub team/user handles.
+
+# Create the team at: Settings → People → Teams
+
 # ──────────────────────────────────────────────────────────────────────────────
 
 # Global fallback — everything not matched below
-*                                   @YOUR_USERNAME
+
+-                                   @YOUR_USERNAME
 
 # ── AI-generated ticket content ───────────────────────────────────────────────
+
 # All analysis JSON, generated specs, snapshots, and results require QA review.
-/tickets/                           @YOUR_TEAM
+
+/tickets/ @YOUR_TEAM
 
 # ── Workflow and agent definitions (high trust — can affect CI automation) ────
-/.github/workflows/                 @YOUR_USERNAME
-/.github/agents/                    @YOUR_USERNAME
-/.github/CODEOWNERS                 @YOUR_USERNAME
+
+/.github/workflows/ @YOUR_USERNAME
+/.github/agents/ @YOUR_USERNAME
+/.github/CODEOWNERS @YOUR_USERNAME
 
 # ── Scripts that run with GITHUB_TOKEN in CI ──────────────────────────────────
-/scripts/                           @YOUR_USERNAME
+
+/scripts/ @YOUR_USERNAME
 
 # ── Configuration files ───────────────────────────────────────────────────────
-/playwright.config.ts               @YOUR_USERNAME
-/package.json                       @YOUR_USERNAME
-/tsconfig.json                      @YOUR_USERNAME
+
+/playwright.config.ts @YOUR_USERNAME
+/package.json @YOUR_USERNAME
+/tsconfig.json @YOUR_USERNAME

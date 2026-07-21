@@ -9,12 +9,12 @@
 
 ### Ticket Reference
 
-| Field | Value |
-|-------|-------|
-| Ticket ID | `<!-- QA-NNN -->` |
-| Feature | <!-- feature name --> |
-| Target URL | <!-- https://... or N/A --> |
-| Source Issue | #<!-- NNN --> |
+| Field        | Value                       |
+| ------------ | --------------------------- |
+| Ticket ID    | `<!-- QA-NNN -->`           |
+| Feature      | <!-- feature name -->       |
+| Target URL   | <!-- https://... or N/A --> |
+| Source Issue | #<!-- NNN -->               |
 
 ---
 
@@ -27,8 +27,9 @@
 #### Acceptance Criteria Covered
 
 <!-- Copied from analysis.json → scenarios. One checkbox per scenario. -->
-- [ ] 
-- [ ] 
+
+- [ ]
+- [ ]
 
 #### Snapshot Evidence
 
@@ -43,6 +44,7 @@ Snapshot folder: `tickets/<!-- ticket-id -->/snapshot/`
 ### Generated Tests
 
 <!-- List every .spec.ts file added or changed. -->
+
 - `tickets/<!-- ticket-id -->/generated/<!-- spec-file -->.spec.ts`
 
 #### Test Run Results
@@ -55,26 +57,28 @@ Snapshot folder: `tickets/<!-- ticket-id -->/snapshot/`
 
 ### Traceability
 
-| Artifact | Status |
-|----------|--------|
-| `ticket.md` | <!-- ✅ / ❌ --> |
-| `analysis.json` | <!-- ✅ / ❌ --> |
-| `approved-analysis.json` | <!-- ✅ created after review / ⏳ pending --> |
-| Spec file(s) in `generated/` | <!-- ✅ / ❌ --> |
-| `logs/status.json` updated | <!-- ✅ / ❌ --> |
-| CI run link | <!-- https://github.com/.../actions/runs/... --> |
+| Artifact                     | Status                                           |
+| ---------------------------- | ------------------------------------------------ |
+| `ticket.md`                  | <!-- ✅ / ❌ -->                                 |
+| `analysis.json`              | <!-- ✅ / ❌ -->                                 |
+| `approved-analysis.json`     | <!-- ✅ created after review / ⏳ pending -->    |
+| Spec file(s) in `generated/` | <!-- ✅ / ❌ -->                                 |
+| `logs/status.json` updated   | <!-- ✅ / ❌ -->                                 |
+| CI run link                  | <!-- https://github.com/.../actions/runs/... --> |
 
 ---
 
 ### Reviewer Checklist
 
 **Analysis quality**
+
 - [ ] Acceptance criteria correctly extracted from ticket
 - [ ] No invented business rules, error messages, or field limits
 - [ ] Ambiguities recorded in `analysis.json → questions`
 - [ ] Risks noted in `analysis.json → risks`
 
 **Test quality**
+
 - [ ] Locators come from the snapshot (role/label/placeholder preferred)
 - [ ] No brittle XPath, `nth-child`, or random class selectors
 - [ ] Every `test.skip()` has a clear, documented reason
@@ -82,10 +86,12 @@ Snapshot folder: `tickets/<!-- ticket-id -->/snapshot/`
 - [ ] No `page.waitForTimeout()` calls
 
 **Safety**
+
 - [ ] No credentials, tokens, or PII in test data
 - [ ] Tests are idempotent (safe to re-run)
 
 **Sign-off**
+
 - [ ] Copy `analysis.json` → `approved-analysis.json` once satisfied
 
 ---

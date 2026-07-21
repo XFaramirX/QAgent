@@ -2,7 +2,7 @@ name: QA Ticket
 description: >
   Request automated QA analysis and Playwright test generation.
   Submit the form — the pipeline starts automatically, no manual label needed.
-title: "[QA]: "
+title: '[QA]: '
 labels: [qa-pending]
 assignees: []
 
@@ -32,7 +32,7 @@ body:
       description: >
         The URL of the page or feature to test.
         Leave blank if not yet available (the analyst will record it as a question).
-      placeholder: "https://example.com/login"
+      placeholder: 'https://example.com/login'
     validations:
       required: false
 
@@ -41,7 +41,7 @@ body:
     attributes:
       label: Feature Title
       description: Short name for the feature or behavior under test (used as the ticket title).
-      placeholder: "Login form validation"
+      placeholder: 'Login form validation'
     validations:
       required: true
 

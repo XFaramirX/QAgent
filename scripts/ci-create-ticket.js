@@ -15,17 +15,17 @@
  *   ISSUE_NUMBER — GitHub issue number
  */
 
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 
 const { TICKET_ID, ISSUE_TITLE, ISSUE_BODY, TARGET_URL, ISSUE_NUMBER } = process.env;
 
 if (!TICKET_ID) {
-  console.error('TICKET_ID environment variable is required.');
-  process.exit(1);
+    console.error('TICKET_ID environment variable is required.');
+    process.exit(1);
 }
 
-const repoRoot  = path.resolve(__dirname, '..');
+const repoRoot = path.resolve(__dirname, '..');
 const ticketDir = path.join(repoRoot, 'tickets', TICKET_ID);
 
 fs.mkdirSync(ticketDir, { recursive: true });
@@ -34,20 +34,20 @@ const url = (TARGET_URL || '').trim() || 'TBD';
 
 // Build a clean ticket.md in the canonical format expected by the agents.
 const content = [
-  `# ${TICKET_ID}: ${(ISSUE_TITLE || '').trim()}`,
-  '',
-  `Target URL: ${url}`,
-  '',
-  '## Description',
-  '',
-  (ISSUE_BODY || '').trim(),
-  '',
-  '## Acceptance Criteria',
-  '',
-  '<!-- Extracted by Requirement Analyst from the Description above -->',
-  '',
-  '---',
-  `_Auto-scaffolded from GitHub issue #${ISSUE_NUMBER || '?'}_`,
+    `# ${TICKET_ID}: ${(ISSUE_TITLE || '').trim()}`,
+    '',
+    `Target URL: ${url}`,
+    '',
+    '## Description',
+    '',
+    (ISSUE_BODY || '').trim(),
+    '',
+    '## Acceptance Criteria',
+    '',
+    '<!-- Extracted by Requirement Analyst from the Description above -->',
+    '',
+    '---',
+    `_Auto-scaffolded from GitHub issue #${ISSUE_NUMBER || '?'}_`,
 ].join('\n');
 
 const ticketFile = path.join(ticketDir, 'ticket.md');

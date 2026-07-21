@@ -1,649 +1,896 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="luxury">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QA Pipeline — End-to-End Flow</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/themes.css">
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    :where(.grid, .flex) > * { min-width: 0; }
-    :where(p, h1, h2, h3, h4, h5, h6, li, td, th, .badge) { overflow-wrap: anywhere; }
-    .mermaid svg { max-width: 100%; height: auto; }
-    .stage-card { scroll-margin-top: 5rem; }
-    .label-chip { display: inline-flex; align-items: center; gap: 0.25rem; }
-  </style>
-</head>
-<body class="bg-base-100 text-base-content min-h-screen">
-
-  <!-- ── NAVBAR ── -->
-  <div class="navbar bg-base-200 sticky top-0 z-50 shadow-md px-4 gap-3">
-    <div class="flex-1 flex items-center gap-3">
-      <span class="text-2xl">🤖</span>
-      <div>
-        <div class="font-bold text-base-content text-sm leading-tight">QA Simple — Automation Pipeline</div>
-        <div class="text-base-content/50 text-xs">GitHub Issue → AI Analysis → Playwright Tests → Pull Request</div>
-      </div>
-    </div>
-    <div class="flex gap-2 flex-wrap justify-end">
-      <a href="#overview"   class="btn btn-ghost btn-xs">Overview</a>
-      <a href="#triage"     class="btn btn-ghost btn-xs">Triage</a>
-      <a href="#pipeline"   class="btn btn-ghost btn-xs">Pipeline</a>
-      <a href="#validation" class="btn btn-ghost btn-xs">Validation</a>
-      <a href="#labels"     class="btn btn-ghost btn-xs">Labels</a>
-      <a href="#setup"      class="btn btn-ghost btn-xs">Setup</a>
-    </div>
-  </div>
-
-  <div class="max-w-6xl mx-auto px-4 py-8 space-y-12">
-
-    <!-- ── HERO ── -->
-    <section id="overview">
-      <div class="hero bg-base-200 rounded-box p-8">
-        <div class="hero-content text-center flex-col gap-4">
-          <h1 class="text-2xl sm:text-3xl font-bold break-words" style="text-wrap:balance">QA Automation Pipeline</h1>
-          <p class="max-w-2xl text-base-content/70 text-base leading-relaxed">
-            A fully automated, GitHub-native QA system. A Product Manager opens an issue — 
-            no manual steps needed. AI agents capture a live page snapshot, extract acceptance 
-            criteria, generate Playwright tests, and open a structured pull request for human review.
-            Every action is traceable through git history, workflow logs, and PR discussions.
-          </p>
-          <div class="flex flex-wrap gap-3 justify-center">
-            <div class="badge badge-soft badge-primary gap-1">🗂️ GitHub Issues as tickets</div>
-            <div class="badge badge-soft badge-secondary gap-1">🤖 AI-driven analysis</div>
-            <div class="badge badge-soft badge-accent gap-1">🎭 Playwright test generation</div>
-            <div class="badge badge-soft badge-success gap-1">✅ Human review gate</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QA Pipeline — End-to-End Flow</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/themes.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      :where(.grid, .flex) > * {
+        min-width: 0;
+      }
+      :where(p, h1, h2, h3, h4, h5, h6, li, td, th, .badge) {
+        overflow-wrap: anywhere;
+      }
+      .mermaid svg {
+        max-width: 100%;
+        height: auto;
+      }
+      .stage-card {
+        scroll-margin-top: 5rem;
+      }
+      .label-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+    </style>
+  </head>
+  <body class="bg-base-100 text-base-content min-h-screen">
+    <!-- ── NAVBAR ── -->
+    <div class="navbar bg-base-200 sticky top-0 z-50 shadow-md px-4 gap-3">
+      <div class="flex-1 flex items-center gap-3">
+        <span class="text-2xl">🤖</span>
+        <div>
+          <div class="font-bold text-base-content text-sm leading-tight">
+            QA Simple — Automation Pipeline
+          </div>
+          <div class="text-base-content/50 text-xs">
+            GitHub Issue → AI Analysis → Playwright Tests → Pull Request
           </div>
         </div>
       </div>
-    </section>
-
-    <!-- ── FULL FLOW DIAGRAM ── -->
-    <section>
-      <h2 class="text-2xl font-bold mb-2">Full Flow Diagram</h2>
-      <p class="text-base-content/60 text-sm mb-4">
-        Click the diagram to open it as an interactive Excalidraw whiteboard. Annotate nodes and edges, then send feedback.
-      </p>
-      <div class="card card-border bg-base-200 p-6 rounded-box overflow-x-auto">
-        <div class="mermaid">
-flowchart TD
-    PM(["👤 PM opens GitHub Issue\n(qa-ticket template)"])
-    AUTO_LABEL["GitHub auto-applies\nqa-pending label"]
-
-    PM --> AUTO_LABEL
-
-    subgraph TRIAGE ["⚡ qa-triage.yml — fires on issues: labeled / edited"]
-        T1{"Issue has\nqa-pending?"}
-        T2["Fast AI completeness check\n· description quality\n· acceptance criteria present\n· URL or URL-note present"]
-        T_PASS["✅ Remove qa-pending\nApply qa-ready\nPost progress comment"]
-        T_FAIL["⚠️ Apply needs-more-info\nPost gap list + suggestions"]
-        T_EDIT(["PM edits issue"])
-    end
-
-    AUTO_LABEL --> T1
-    T1 -->|yes| T2
-    T1 -->|no| STOP1(["🛑 skip"])
-    T2 -->|complete| T_PASS
-    T2 -->|incomplete| T_FAIL
-    T_FAIL --> T_EDIT
-    T_EDIT -->|re-triggers triage| T1
-
-    subgraph PIPELINE ["🚀 issue-to-qa.yml — qa-ready label OR workflow_dispatch"]
-        direction TB
-        S1["1 · Setup\nDerive ticket ID\nCreate branch qa/qa-NNN\nScaffold ticket.md\nComment on issue"]
-        S2["2 · Snapshot\nnpm run snapshot\nAccessibility tree · DOM · screenshot\nconsole + network logs"]
-        S3["3 · Requirement Analyst\nGitHub Models API\nExtracts scenarios, risks, questions\nWrites analysis.json"]
-        S4["4 · Playwright Generator\nGitHub Models API\nWrites .spec.ts\nRuns tests non-fatally"]
-        S5["5 · Open PR\nStructured body from artifacts\nLabels: qa-automated, needs-review\nLinks PR on issue"]
-        ESC["6 · Escalate\nComment failed stages on issue\nApply escalation-needed label"]
-
-        S1 --> S2 --> S3 --> S4 --> S5
-        S1 & S3 & S4 & S5 -.->|any failure| ESC
-    end
-
-    T_PASS -->|"qa-ready label ✅"| PIPELINE
-    DISPATCH(["👤 Maintainer\nActions tab → Run workflow\ninputs: ticket-id, issue-number, url"]) -->|workflow_dispatch| PIPELINE
-
-    subgraph VALIDATION ["🔍 validate-qa-plan.yml — required PR status check"]
-        V1["Plan structure & traceability\n· analysis.json schema\n· scenarios non-empty\n· snapshotRef set\n· spec files exist"]
-        V2["TypeScript spec typecheck\nnpx tsc --noEmit"]
-        CO["CODEOWNERS review\ntickets/ → team\nworkflows/ → owner"]
-    end
-
-    S5 --> VALIDATION
-
-    APPROVE(["✅ Human approves PR\nCopies analysis.json → approved-analysis.json\nMerges to main"])
-    REJECT(["✏️ Changes requested\nPush fixes to branch"])
-
-    VALIDATION -->|"all checks pass\n+ CODEOWNERS approved"| APPROVE
-    VALIDATION -->|"checks fail or\nchanges requested"| REJECT
-    REJECT --> VALIDATION
-
-    subgraph CI ["🔒 start.yml — push / PR to main"]
-        E2E["End-to-end tests\nnpx playwright test"]
-        CODEQL["CodeQL security analysis\njavascript"]
-    end
-
-    APPROVE --> CI
-        </div>
+      <div class="flex gap-2 flex-wrap justify-end">
+        <a href="#overview" class="btn btn-ghost btn-xs">Overview</a>
+        <a href="#triage" class="btn btn-ghost btn-xs">Triage</a>
+        <a href="#pipeline" class="btn btn-ghost btn-xs">Pipeline</a>
+        <a href="#validation" class="btn btn-ghost btn-xs">Validation</a>
+        <a href="#labels" class="btn btn-ghost btn-xs">Labels</a>
+        <a href="#setup" class="btn btn-ghost btn-xs">Setup</a>
       </div>
-    </section>
+    </div>
 
-    <!-- ── TRIGGER SECTION ── -->
-    <section id="triage" class="stage-card">
-      <h2 class="text-2xl font-bold mb-1">Stage 0 — Issue Submission & Triage</h2>
-      <div class="divider mt-0"></div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        <div class="card card-border bg-base-200">
-          <div class="card-body gap-3">
-            <h3 class="card-title text-base">
-              <span class="badge badge-soft badge-neutral">issue template</span>
-              qa-ticket.yml
-            </h3>
-            <p class="text-sm text-base-content/70 leading-relaxed">
-              A PM opens a GitHub Issue using the <strong>QA Ticket</strong> form. 
-              The form collects Target URL, Feature Title, Description, and Acceptance Criteria.
-              On submit, GitHub automatically applies the <code class="badge badge-xs badge-soft badge-warning">qa-pending</code> label — 
-              <em>no manual step needed</em>.
+    <div class="max-w-6xl mx-auto px-4 py-8 space-y-12">
+      <!-- ── HERO ── -->
+      <section id="overview">
+        <div class="hero bg-base-200 rounded-box p-8">
+          <div class="hero-content text-center flex-col gap-4">
+            <h1
+              class="text-2xl sm:text-3xl font-bold break-words"
+              style="text-wrap: balance"
+            >
+              QA Automation Pipeline
+            </h1>
+            <p class="max-w-2xl text-base-content/70 text-base leading-relaxed">
+              A fully automated, GitHub-native QA system. A Product Manager
+              opens an issue — no manual steps needed. AI agents capture a live
+              page snapshot, extract acceptance criteria, generate Playwright
+              tests, and open a structured pull request for human review. Every
+              action is traceable through git history, workflow logs, and PR
+              discussions.
             </p>
-            <div class="text-xs text-base-content/50 font-mono bg-base-300 rounded p-2">
-              labels: [qa-pending]  ← applied by the template automatically
-            </div>
-          </div>
-        </div>
-
-        <div class="card card-border bg-base-200">
-          <div class="card-body gap-3">
-            <h3 class="card-title text-base">
-              <span class="badge badge-soft badge-warning">workflow</span>
-              qa-triage.yml
-            </h3>
-            <p class="text-sm text-base-content/70 leading-relaxed">
-              Fires immediately on <code>issues: [labeled, edited]</code>. Makes a single fast AI call 
-              (temperature 0, max 512 tokens) to check completeness. 
-              Re-fires every time the PM edits the issue, so incomplete tickets get a second chance automatically.
-            </p>
-            <div class="collapse collapse-arrow bg-base-300 rounded-lg">
-              <input type="checkbox" />
-              <div class="collapse-title text-xs font-semibold">What the AI checks</div>
-              <div class="collapse-content">
-                <ul class="text-xs space-y-1 text-base-content/70 list-disc list-inside">
-                  <li>Description is non-trivial (≥ 2 sentences or bullet points)</li>
-                  <li>At least one acceptance criterion (line starting with <code>-</code> or numbered)</li>
-                  <li>Target URL is present, or an explicit note that it is not yet available</li>
-                </ul>
+            <div class="flex flex-wrap gap-3 justify-center">
+              <div class="badge badge-soft badge-primary gap-1">
+                🗂️ GitHub Issues as tickets
+              </div>
+              <div class="badge badge-soft badge-secondary gap-1">
+                🤖 AI-driven analysis
+              </div>
+              <div class="badge badge-soft badge-accent gap-1">
+                🎭 Playwright test generation
+              </div>
+              <div class="badge badge-soft badge-success gap-1">
+                ✅ Human review gate
               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        <div class="card card-border bg-success/10 border-success/30">
-          <div class="card-body gap-2">
-            <h3 class="card-title text-base text-success">✅ Pass path</h3>
-            <p class="text-sm text-base-content/70 leading-relaxed">
-              Removes <code class="badge badge-xs badge-soft badge-warning">qa-pending</code>, 
-              applies <code class="badge badge-xs badge-soft badge-success">qa-ready</code>, 
-              also removes <code class="badge badge-xs badge-soft badge-error">needs-more-info</code> if present.
-              Posts a progress table comment on the issue showing all pipeline stages as ⏳ Queued.
-              The <code>qa-ready</code> label immediately triggers <code>issue-to-qa.yml</code>.
-            </p>
+      <!-- ── FULL FLOW DIAGRAM ── -->
+      <section>
+        <h2 class="text-2xl font-bold mb-2">Full Flow Diagram</h2>
+        <p class="text-base-content/60 text-sm mb-4">
+          Click the diagram to open it as an interactive Excalidraw whiteboard.
+          Annotate nodes and edges, then send feedback.
+        </p>
+        <div
+          class="card card-border bg-base-200 p-6 rounded-box overflow-x-auto"
+        >
+          <div class="mermaid">
+            flowchart TD PM(["👤 PM opens GitHub Issue\n(qa-ticket template)"])
+            AUTO_LABEL["GitHub auto-applies\nqa-pending label"] PM -->
+            AUTO_LABEL subgraph TRIAGE ["⚡ qa-triage.yml — fires on issues:
+            labeled / edited"] T1{"Issue has\nqa-pending?"} T2["Fast AI
+            completeness check\n· description quality\n· acceptance criteria
+            present\n· URL or URL-note present"] T_PASS["✅ Remove
+            qa-pending\nApply qa-ready\nPost progress comment"] T_FAIL["⚠️ Apply
+            needs-more-info\nPost gap list + suggestions"] T_EDIT(["PM edits
+            issue"]) end AUTO_LABEL --> T1 T1 -->|yes| T2 T1 -->|no| STOP1(["🛑
+            skip"]) T2 -->|complete| T_PASS T2 -->|incomplete| T_FAIL T_FAIL -->
+            T_EDIT T_EDIT -->|re-triggers triage| T1 subgraph PIPELINE ["🚀
+            issue-to-qa.yml — qa-ready label OR workflow_dispatch"] direction TB
+            S1["1 · Setup\nDerive ticket ID\nCreate branch qa/qa-NNN\nScaffold
+            ticket.md\nComment on issue"] S2["2 · Snapshot\nnpm run
+            snapshot\nAccessibility tree · DOM · screenshot\nconsole + network
+            logs"] S3["3 · Requirement Analyst\nGitHub Models API\nExtracts
+            scenarios, risks, questions\nWrites analysis.json"] S4["4 ·
+            Playwright Generator\nGitHub Models API\nWrites .spec.ts\nRuns tests
+            non-fatally"] S5["5 · Open PR\nStructured body from
+            artifacts\nLabels: qa-automated, needs-review\nLinks PR on issue"]
+            ESC["6 · Escalate\nComment failed stages on issue\nApply
+            escalation-needed label"] S1 --> S2 --> S3 --> S4 --> S5 S1 & S3 &
+            S4 & S5 -.->|any failure| ESC end T_PASS -->|"qa-ready label ✅"|
+            PIPELINE DISPATCH(["👤 Maintainer\nActions tab → Run
+            workflow\ninputs: ticket-id, issue-number, url"])
+            -->|workflow_dispatch| PIPELINE subgraph VALIDATION ["🔍
+            validate-qa-plan.yml — required PR status check"] V1["Plan structure
+            & traceability\n· analysis.json schema\n· scenarios non-empty\n·
+            snapshotRef set\n· spec files exist"] V2["TypeScript spec
+            typecheck\nnpx tsc --noEmit"] CO["CODEOWNERS review\ntickets/ →
+            team\nworkflows/ → owner"] end S5 --> VALIDATION APPROVE(["✅ Human
+            approves PR\nCopies analysis.json → approved-analysis.json\nMerges
+            to main"]) REJECT(["✏️ Changes requested\nPush fixes to branch"])
+            VALIDATION -->|"all checks pass\n+ CODEOWNERS approved"| APPROVE
+            VALIDATION -->|"checks fail or\nchanges requested"| REJECT REJECT
+            --> VALIDATION subgraph CI ["🔒 start.yml — push / PR to main"]
+            E2E["End-to-end tests\nnpx playwright test"] CODEQL["CodeQL security
+            analysis\njavascript"] end APPROVE --> CI
           </div>
         </div>
+      </section>
 
-        <div class="card card-border bg-warning/10 border-warning/30">
-          <div class="card-body gap-2">
-            <h3 class="card-title text-base text-warning">⚠️ Fail path</h3>
-            <p class="text-sm text-base-content/70 leading-relaxed">
-              Applies <code class="badge badge-xs badge-soft badge-error">needs-more-info</code>.
-              Posts a comment listing <em>exactly</em> what's missing with one actionable suggestion per gap.
-              The PM edits the issue — this re-triggers the triage check automatically (no label shuffling needed).
-            </p>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ── PIPELINE STAGES ── -->
-    <section id="pipeline" class="stage-card">
-      <h2 class="text-2xl font-bold mb-1">Stages 1–5 — QA Pipeline</h2>
-      <p class="text-base-content/60 text-sm mb-2">Triggered by <code class="badge badge-xs badge-soft badge-success">qa-ready</code> label or <code>workflow_dispatch</code> from the Actions tab.</p>
-      <div class="divider mt-0"></div>
-
-      <div class="space-y-4">
-
-        <!-- Stage 1 -->
-        <div class="card card-border bg-base-200 stage-card">
-          <div class="card-body">
-            <h3 class="card-title">
-              <span class="badge badge-soft badge-primary">1</span>
-              Setup — Branch isolation &amp; ticket scaffold
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <p class="text-sm text-base-content/70 leading-relaxed">
-                  Derives a canonical <strong>Ticket ID</strong> (<code>QA-NNN</code> from the issue number) 
-                  and a branch name (<code>qa/qa-NNN-issue-NNN</code>). 
-                  Creates the branch, pushes it, then runs <code>ci-create-ticket.js</code> to scaffold 
-                  <code>tickets/QA-NNN/ticket.md</code> from the issue body. Commits and pushes.
-                </p>
-                <p class="text-sm text-base-content/70 leading-relaxed">
-                  <strong>Branch isolation</strong> means every issue lives on its own branch — 
-                  broken AI output never touches <code>main</code> until a human approves the PR.
-                </p>
+      <!-- ── TRIGGER SECTION ── -->
+      <section id="triage" class="stage-card">
+        <h2 class="text-2xl font-bold mb-1">
+          Stage 0 — Issue Submission & Triage
+        </h2>
+        <div class="divider mt-0"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="card card-border bg-base-200">
+            <div class="card-body gap-3">
+              <h3 class="card-title text-base">
+                <span class="badge badge-soft badge-neutral"
+                  >issue template</span
+                >
+                qa-ticket.yml
+              </h3>
+              <p class="text-sm text-base-content/70 leading-relaxed">
+                A PM opens a GitHub Issue using the
+                <strong>QA Ticket</strong> form. The form collects Target URL,
+                Feature Title, Description, and Acceptance Criteria. On submit,
+                GitHub automatically applies the
+                <code class="badge badge-xs badge-soft badge-warning"
+                  >qa-pending</code
+                >
+                label — <em>no manual step needed</em>.
+              </p>
+              <div
+                class="text-xs text-base-content/50 font-mono bg-base-300 rounded p-2"
+              >
+                labels: [qa-pending] ← applied by the template automatically
               </div>
-              <div class="space-y-2">
-                <div class="text-xs font-mono bg-base-300 rounded p-3 space-y-1">
-                  <div class="text-base-content/50"># Automatic for issues:</div>
-                  <div>TICKET_ID = "QA-007"</div>
-                  <div>BRANCH = "qa/qa-007-issue-7"</div>
-                  <div class="mt-2 text-base-content/50"># Manual dispatch inputs:</div>
-                  <div>ticket-id: "QA-007"</div>
-                  <div>issue-number: "7"</div>
-                  <div>target-url: "https://..."</div>
+            </div>
+          </div>
+
+          <div class="card card-border bg-base-200">
+            <div class="card-body gap-3">
+              <h3 class="card-title text-base">
+                <span class="badge badge-soft badge-warning">workflow</span>
+                qa-triage.yml
+              </h3>
+              <p class="text-sm text-base-content/70 leading-relaxed">
+                Fires immediately on <code>issues: [labeled, edited]</code>.
+                Makes a single fast AI call (temperature 0, max 512 tokens) to
+                check completeness. Re-fires every time the PM edits the issue,
+                so incomplete tickets get a second chance automatically.
+              </p>
+              <div class="collapse collapse-arrow bg-base-300 rounded-lg">
+                <input type="checkbox" />
+                <div class="collapse-title text-xs font-semibold">
+                  What the AI checks
                 </div>
-                <div role="alert" class="alert alert-soft alert-info text-xs py-2">
-                  Commits use <code>github-actions[bot]</code> identity — every artifact is traceable to a run ID.
+                <div class="collapse-content">
+                  <ul
+                    class="text-xs space-y-1 text-base-content/70 list-disc list-inside"
+                  >
+                    <li>
+                      Description is non-trivial (≥ 2 sentences or bullet
+                      points)
+                    </li>
+                    <li>
+                      At least one acceptance criterion (line starting with
+                      <code>-</code> or numbered)
+                    </li>
+                    <li>
+                      Target URL is present, or an explicit note that it is not
+                      yet available
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Stage 2 -->
-        <div class="card card-border bg-base-200 stage-card">
-          <div class="card-body">
-            <h3 class="card-title">
-              <span class="badge badge-soft badge-secondary">2</span>
-              Snapshot — Live page evidence capture
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p class="text-sm text-base-content/70 leading-relaxed">
-                  Runs <code>npm run snapshot -- &lt;URL&gt; &lt;ticketId&gt;</code> using Playwright in 
-                  headless Chromium. Captures the full page state as a bundle of artifacts 
-                  committed to the ticket branch.
-                </p>
-                <p class="text-sm text-base-content/70 leading-relaxed mt-2">
-                  This step is <strong>non-fatal</strong> — if the URL is unreachable (e.g. behind auth, not yet live), 
-                  the pipeline continues and the Analyst records it as a risk. 
-                  Only real evidence is used; AI agents are forbidden from inventing UI behaviour.
-                </p>
+          <div class="card card-border bg-success/10 border-success/30">
+            <div class="card-body gap-2">
+              <h3 class="card-title text-base text-success">✅ Pass path</h3>
+              <p class="text-sm text-base-content/70 leading-relaxed">
+                Removes
+                <code class="badge badge-xs badge-soft badge-warning"
+                  >qa-pending</code
+                >, applies
+                <code class="badge badge-xs badge-soft badge-success"
+                  >qa-ready</code
+                >, also removes
+                <code class="badge badge-xs badge-soft badge-error"
+                  >needs-more-info</code
+                >
+                if present. Posts a progress table comment on the issue showing
+                all pipeline stages as ⏳ Queued. The
+                <code>qa-ready</code> label immediately triggers
+                <code>issue-to-qa.yml</code>.
+              </p>
+            </div>
+          </div>
+
+          <div class="card card-border bg-warning/10 border-warning/30">
+            <div class="card-body gap-2">
+              <h3 class="card-title text-base text-warning">⚠️ Fail path</h3>
+              <p class="text-sm text-base-content/70 leading-relaxed">
+                Applies
+                <code class="badge badge-xs badge-soft badge-error"
+                  >needs-more-info</code
+                >. Posts a comment listing <em>exactly</em> what's missing with
+                one actionable suggestion per gap. The PM edits the issue — this
+                re-triggers the triage check automatically (no label shuffling
+                needed).
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── PIPELINE STAGES ── -->
+      <section id="pipeline" class="stage-card">
+        <h2 class="text-2xl font-bold mb-1">Stages 1–5 — QA Pipeline</h2>
+        <p class="text-base-content/60 text-sm mb-2">
+          Triggered by
+          <code class="badge badge-xs badge-soft badge-success">qa-ready</code>
+          label or <code>workflow_dispatch</code> from the Actions tab.
+        </p>
+        <div class="divider mt-0"></div>
+
+        <div class="space-y-4">
+          <!-- Stage 1 -->
+          <div class="card card-border bg-base-200 stage-card">
+            <div class="card-body">
+              <h3 class="card-title">
+                <span class="badge badge-soft badge-primary">1</span>
+                Setup — Branch isolation &amp; ticket scaffold
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <p class="text-sm text-base-content/70 leading-relaxed">
+                    Derives a canonical <strong>Ticket ID</strong> (<code
+                      >QA-NNN</code
+                    >
+                    from the issue number) and a branch name
+                    (<code>qa/qa-NNN-issue-NNN</code>). Creates the branch,
+                    pushes it, then runs <code>ci-create-ticket.js</code> to
+                    scaffold <code>tickets/QA-NNN/ticket.md</code> from the
+                    issue body. Commits and pushes.
+                  </p>
+                  <p class="text-sm text-base-content/70 leading-relaxed">
+                    <strong>Branch isolation</strong> means every issue lives on
+                    its own branch — broken AI output never touches
+                    <code>main</code> until a human approves the PR.
+                  </p>
+                </div>
+                <div class="space-y-2">
+                  <div
+                    class="text-xs font-mono bg-base-300 rounded p-3 space-y-1"
+                  >
+                    <div class="text-base-content/50">
+                      # Automatic for issues:
+                    </div>
+                    <div>TICKET_ID = "QA-007"</div>
+                    <div>BRANCH = "qa/qa-007-issue-7"</div>
+                    <div class="mt-2 text-base-content/50">
+                      # Manual dispatch inputs:
+                    </div>
+                    <div>ticket-id: "QA-007"</div>
+                    <div>issue-number: "7"</div>
+                    <div>target-url: "https://..."</div>
+                  </div>
+                  <div
+                    role="alert"
+                    class="alert alert-soft alert-info text-xs py-2"
+                  >
+                    Commits use <code>github-actions[bot]</code> identity —
+                    every artifact is traceable to a run ID.
+                  </div>
+                </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Stage 2 -->
+          <div class="card card-border bg-base-200 stage-card">
+            <div class="card-body">
+              <h3 class="card-title">
+                <span class="badge badge-soft badge-secondary">2</span>
+                Snapshot — Live page evidence capture
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p class="text-sm text-base-content/70 leading-relaxed">
+                    Runs
+                    <code
+                      >npm run snapshot -- &lt;URL&gt; &lt;ticketId&gt;</code
+                    >
+                    using Playwright in headless Chromium. Captures the full
+                    page state as a bundle of artifacts committed to the ticket
+                    branch.
+                  </p>
+                  <p class="text-sm text-base-content/70 leading-relaxed mt-2">
+                    This step is <strong>non-fatal</strong> — if the URL is
+                    unreachable (e.g. behind auth, not yet live), the pipeline
+                    continues and the Analyst records it as a risk. Only real
+                    evidence is used; AI agents are forbidden from inventing UI
+                    behaviour.
+                  </p>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="table table-sm bg-base-300 rounded-lg">
+                    <thead>
+                      <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><code>snapshot.md</code></td>
+                        <td>
+                          Accessibility tree —
+                          <strong>source of truth for locators</strong>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><code>page.html</code></td>
+                        <td>Full DOM (fallback locator reference)</td>
+                      </tr>
+                      <tr>
+                        <td><code>page.png</code></td>
+                        <td>Full-page screenshot</td>
+                      </tr>
+                      <tr>
+                        <td><code>console.log</code></td>
+                        <td>Console errors &amp; warnings</td>
+                      </tr>
+                      <tr>
+                        <td><code>network.log</code></td>
+                        <td>Network request list</td>
+                      </tr>
+                      <tr>
+                        <td><code>meta.json</code></td>
+                        <td>URL, title, viewport, capturedAt</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage 3 -->
+          <div class="card card-border bg-base-200 stage-card">
+            <div class="card-body">
+              <h3 class="card-title">
+                <span class="badge badge-soft badge-accent">3</span>
+                Requirement Analyst — AI-driven acceptance criteria extraction
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <p class="text-sm text-base-content/70 leading-relaxed">
+                    Runs <code>ci-run-analyst.js</code>. Uses the
+                    <strong>Requirement Analyst</strong> system prompt from
+                    <code>.github/agents/requirement-analyst.agent.md</code>
+                    (same prompt as the VS Code agent — CI is a headless
+                    execution of the same instructions).
+                  </p>
+                  <p class="text-sm text-base-content/70 leading-relaxed">
+                    Sends the ticket content + snapshot accessibility tree to
+                    the GitHub Models API. Writes
+                    <code>analysis.json</code> containing scenarios, risks,
+                    questions, assumptions, and a <code>snapshotRef</code>.
+                  </p>
+                </div>
+                <div class="space-y-2">
+                  <div class="collapse collapse-arrow bg-base-300 rounded-lg">
+                    <input type="checkbox" />
+                    <div class="collapse-title text-xs font-semibold">
+                      Retry &amp; resilience
+                    </div>
+                    <div
+                      class="collapse-content text-xs text-base-content/70 space-y-1"
+                    >
+                      <p>
+                        Retries up to <strong>3×</strong> with exponential
+                        backoff (5s → 10s → 15s) on any HTTP error or JSON parse
+                        failure.
+                      </p>
+                      <p>
+                        Uses <code>response_format: json_object</code> to
+                        prevent prose leaking into the output.
+                      </p>
+                      <p>
+                        Falls back to <code>GITHUB_TOKEN</code> if no
+                        <code>AI_API_KEY</code> secret is set.
+                      </p>
+                    </div>
+                  </div>
+                  <div class="collapse collapse-arrow bg-base-300 rounded-lg">
+                    <input type="checkbox" />
+                    <div class="collapse-title text-xs font-semibold">
+                      What the analyst MUST NOT do
+                    </div>
+                    <div class="collapse-content text-xs text-base-content/70">
+                      <ul class="list-disc list-inside space-y-1">
+                        <li>Invent business rules not in the ticket</li>
+                        <li>Fabricate error messages or field limits</li>
+                        <li>Invent API behaviour or user permissions</li>
+                        <li>Generate test data without evidence</li>
+                      </ul>
+                      <p class="mt-1">
+                        Uncertainties go into <code>questions</code>; reasonable
+                        inferences go into <code>assumptions</code> with a
+                        confidence level.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage 4 -->
+          <div class="card card-border bg-base-200 stage-card">
+            <div class="card-body">
+              <h3 class="card-title">
+                <span class="badge badge-soft badge-info">4</span>
+                Playwright Generator — Test generation &amp; validation
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <p class="text-sm text-base-content/70 leading-relaxed">
+                    Runs <code>ci-run-generator.js</code> with the
+                    <strong>Playwright Generator</strong> system prompt. Reads
+                    <code>analysis.json</code> and the snapshot bundle. The
+                    accessibility tree (<code>snapshot.md</code>) is the
+                    <em>single source of truth for locators</em> — no invented
+                    selectors allowed.
+                  </p>
+                  <p class="text-sm text-base-content/70 leading-relaxed">
+                    Also auto-copies
+                    <code>analysis.json → approved-analysis.json</code> for CI
+                    (the PR review is the real human gate). Runs
+                    <code>npm run test:ticket</code>
+                    non-fatally — a red result still produces the PR so the
+                    reviewer can investigate.
+                  </p>
+                </div>
+                <div class="space-y-2">
+                  <div class="text-xs bg-base-300 rounded p-3">
+                    <div class="font-semibold mb-1">Locator priority order</div>
+                    <ol
+                      class="list-decimal list-inside space-y-0.5 text-base-content/70"
+                    >
+                      <li><code>page.getByRole()</code></li>
+                      <li><code>page.getByLabel()</code></li>
+                      <li><code>page.getByPlaceholder()</code></li>
+                      <li><code>page.getByText()</code></li>
+                      <li><code>page.getByTestId()</code></li>
+                      <li>CSS selector (last resort only)</li>
+                    </ol>
+                  </div>
+                  <div
+                    role="alert"
+                    class="alert alert-soft alert-warning text-xs py-2"
+                  >
+                    <strong>Forbidden:</strong> random classes,
+                    <code>nth-child</code>, brittle XPath,
+                    <code>page.waitForTimeout()</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage 5 -->
+          <div class="card card-border bg-base-200 stage-card">
+            <div class="card-body">
+              <h3 class="card-title">
+                <span class="badge badge-soft badge-success">5</span>
+                Open PR — Structured pull request with all artifacts
+              </h3>
+              <p class="text-sm text-base-content/70 leading-relaxed">
+                Runs <code>ci-build-pr-body.js</code> to assemble a rich PR body
+                from the ticket artifacts — scenario list, test run summary,
+                traceability table, and a reviewer checklist. Creates the PR
+                with labels
+                <code class="badge badge-xs badge-soft badge-success"
+                  >qa-automated</code
+                >
+                and
+                <code class="badge badge-xs badge-soft badge-info"
+                  >needs-review</code
+                >, assigned to the original issue author. Posts a comment on the
+                issue with the PR link and next steps.
+              </p>
+            </div>
+          </div>
+
+          <!-- Escalation -->
+          <div class="card card-border bg-error/10 border-error/30 stage-card">
+            <div class="card-body">
+              <h3 class="card-title text-error">
+                <span class="badge badge-soft badge-error">6</span>
+                Escalation — Automatic human notification on failure
+              </h3>
+              <p class="text-sm text-base-content/70 leading-relaxed">
+                Runs <strong>only when any upstream stage fails</strong>. Posts
+                a structured comment on the source issue listing exactly which
+                stages failed, a direct link to the workflow run, and retry
+                instructions. Applies the
+                <code class="badge badge-xs badge-soft badge-error"
+                  >escalation-needed</code
+                >
+                label so maintainers can filter for issues needing attention. A
+                failed snapshot is <em>not</em> escalated — it's expected for
+                unreachable URLs.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── VALIDATION ── -->
+      <section id="validation" class="stage-card">
+        <h2 class="text-2xl font-bold mb-1">
+          PR Gates — Validation &amp; Review
+        </h2>
+        <div class="divider mt-0"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="card card-border bg-base-200">
+            <div class="card-body gap-2">
+              <h3 class="card-title text-sm">
+                <span class="badge badge-soft badge-primary"
+                  >required check</span
+                >
+                Plan structure &amp; traceability
+              </h3>
+              <ul
+                class="text-xs text-base-content/70 space-y-1 list-disc list-inside"
+              >
+                <li><code>ticket.md</code> exists</li>
+                <li><code>analysis.json</code> is valid JSON</li>
+                <li>
+                  Required fields present: <code>ticketId</code>,
+                  <code>feature</code>, <code>scenarios</code>
+                </li>
+                <li>Scenarios array is non-empty</li>
+                <li><code>snapshotRef</code> set (warning if missing)</li>
+                <li>
+                  At least one <code>.spec.ts</code> in <code>generated/</code>
+                </li>
+                <li>
+                  <code>approved-analysis.json</code> exists (warning if
+                  missing)
+                </li>
+              </ul>
+              <div class="text-xs text-base-content/50 mt-1">
+                Exit code 1 on errors → PR cannot merge.
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-border bg-base-200">
+            <div class="card-body gap-2">
+              <h3 class="card-title text-sm">
+                <span class="badge badge-soft badge-secondary"
+                  >required check</span
+                >
+                TypeScript spec typecheck
+              </h3>
+              <p class="text-xs text-base-content/70 leading-relaxed">
+                Runs <code>npx tsc --noEmit</code> on all spec files. Catches
+                type errors in generated tests before they reach
+                <code>main</code> — no browser needed, runs in under 10 seconds.
+              </p>
+            </div>
+          </div>
+
+          <div class="card card-border bg-base-200">
+            <div class="card-body gap-2">
+              <h3 class="card-title text-sm">
+                <span class="badge badge-soft badge-accent">CODEOWNERS</span>
+                Required human review
+              </h3>
+              <p class="text-xs text-base-content/70 leading-relaxed">
+                <code>.github/CODEOWNERS</code> requires at least one approved
+                review from a named team or owner before any
+                <code>tickets/</code> change merges. This is the primary safety
+                gate — AI output is never auto-merged.
+              </p>
+              <div
+                class="text-xs font-mono bg-base-300 rounded p-2 space-y-0.5"
+              >
+                <div>/tickets/ → @YOUR_TEAM</div>
+                <div>/.github/ → @YOUR_USERNAME</div>
+                <div>/scripts/ → @YOUR_USERNAME</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── LABEL LIFECYCLE ── -->
+      <section id="labels" class="stage-card">
+        <h2 class="text-2xl font-bold mb-1">Label Lifecycle</h2>
+        <div class="divider mt-0"></div>
+        <div
+          class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100"
+        >
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Label</th>
+                <th>Applied by</th>
+                <th>Means</th>
+                <th>Triggers</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="badge badge-soft badge-warning">qa-pending</span>
+                </td>
+                <td>Issue template (on submit)</td>
+                <td>Ticket submitted, triage not yet run</td>
+                <td><code>qa-triage.yml</code></td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="badge badge-soft badge-error"
+                    >needs-more-info</span
+                  >
+                </td>
+                <td><code>qa-triage.yml</code> (fail path)</td>
+                <td>Ticket incomplete — PM needs to edit</td>
+                <td>Nothing (waits for PM to edit issue)</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="badge badge-soft badge-success">qa-ready</span>
+                </td>
+                <td><code>qa-triage.yml</code> (pass path)</td>
+                <td>Triage passed, pipeline starting</td>
+                <td><code>issue-to-qa.yml</code></td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="badge badge-soft badge-info">qa-automated</span>
+                </td>
+                <td><code>issue-to-qa.yml</code> (on PR)</td>
+                <td>PR opened by the pipeline</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="badge badge-soft badge-secondary"
+                    >needs-review</span
+                  >
+                </td>
+                <td><code>issue-to-qa.yml</code> (on PR)</td>
+                <td>PR awaiting human review</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="badge badge-soft badge-error"
+                    >escalation-needed</span
+                  >
+                </td>
+                <td><code>issue-to-qa.yml</code> (escalate job)</td>
+                <td>Pipeline failed — human intervention needed</td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── SETUP CHECKLIST ── -->
+      <section id="setup" class="stage-card">
+        <h2 class="text-2xl font-bold mb-1">Repository Setup Checklist</h2>
+        <p class="text-base-content/60 text-sm mb-2">
+          Everything required before the pipeline runs for the first time.
+        </p>
+        <div class="divider mt-0"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="card card-border bg-base-200">
+            <div class="card-body gap-3">
+              <h3 class="card-title text-sm">GitHub Labels</h3>
+              <p class="text-xs text-base-content/60">
+                Create in Settings → Labels. The pipeline uses these names
+                exactly.
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <span class="badge badge-soft badge-warning">qa-pending</span>
+                <span class="badge badge-soft badge-success">qa-ready</span>
+                <span class="badge badge-soft badge-error"
+                  >needs-more-info</span
+                >
+                <span class="badge badge-soft badge-info">qa-automated</span>
+                <span class="badge badge-soft badge-secondary"
+                  >needs-review</span
+                >
+                <span class="badge badge-soft badge-error"
+                  >escalation-needed</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-border bg-base-200">
+            <div class="card-body gap-3">
+              <h3 class="card-title text-sm">
+                Branch Protection on <code>main</code>
+              </h3>
+              <p class="text-xs text-base-content/60">
+                Settings → Branches → Add rule for <code>main</code>:
+              </p>
+              <ul
+                class="text-xs text-base-content/70 space-y-1 list-disc list-inside"
+              >
+                <li>
+                  Require status check:
+                  <strong>QA plan structure &amp; traceability</strong>
+                </li>
+                <li>
+                  Require status check:
+                  <strong>TypeScript spec typecheck</strong>
+                </li>
+                <li>Require approving review (min 1, from CODEOWNERS)</li>
+                <li>Dismiss stale reviews on new commits</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card card-border bg-base-200">
+            <div class="card-body gap-3">
+              <h3 class="card-title text-sm">CODEOWNERS</h3>
+              <p class="text-xs text-base-content/60">
+                Edit <code>.github/CODEOWNERS</code> — replace placeholder
+                handles with real ones:
+              </p>
+              <div
+                class="text-xs font-mono bg-base-300 rounded p-2 space-y-0.5"
+              >
+                <div>* @YOUR_USERNAME</div>
+                <div>/tickets/ @YOUR_TEAM</div>
+                <div>/.github/ @YOUR_USERNAME</div>
+                <div>/scripts/ @YOUR_USERNAME</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-border bg-base-200">
+            <div class="card-body gap-3">
+              <h3 class="card-title text-sm">Secrets &amp; Variables</h3>
+              <p class="text-xs text-base-content/60">
+                Settings → Secrets and variables → Actions:
+              </p>
               <div class="overflow-x-auto">
-                <table class="table table-sm bg-base-300 rounded-lg">
-                  <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+                <table class="table table-xs">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Required</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    <tr><td><code>snapshot.md</code></td><td>Accessibility tree — <strong>source of truth for locators</strong></td></tr>
-                    <tr><td><code>page.html</code></td><td>Full DOM (fallback locator reference)</td></tr>
-                    <tr><td><code>page.png</code></td><td>Full-page screenshot</td></tr>
-                    <tr><td><code>console.log</code></td><td>Console errors &amp; warnings</td></tr>
-                    <tr><td><code>network.log</code></td><td>Network request list</td></tr>
-                    <tr><td><code>meta.json</code></td><td>URL, title, viewport, capturedAt</td></tr>
+                    <tr>
+                      <td><code>AI_API_KEY</code></td>
+                      <td>Secret</td>
+                      <td>No — falls back to <code>GITHUB_TOKEN</code></td>
+                    </tr>
+                    <tr>
+                      <td><code>QA_AI_MODEL_ENDPOINT</code></td>
+                      <td>Variable</td>
+                      <td>No — defaults to GitHub Models</td>
+                    </tr>
+                    <tr>
+                      <td><code>QA_AI_MODEL</code></td>
+                      <td>Variable</td>
+                      <td>No — defaults to <code>openai/gpt-4o</code></td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        <!-- Stage 3 -->
-        <div class="card card-border bg-base-200 stage-card">
-          <div class="card-body">
-            <h3 class="card-title">
-              <span class="badge badge-soft badge-accent">3</span>
-              Requirement Analyst — AI-driven acceptance criteria extraction
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <p class="text-sm text-base-content/70 leading-relaxed">
-                  Runs <code>ci-run-analyst.js</code>. Uses the 
-                  <strong>Requirement Analyst</strong> system prompt from 
-                  <code>.github/agents/requirement-analyst.agent.md</code> 
-                  (same prompt as the VS Code agent — CI is a headless execution of the same instructions).
-                </p>
-                <p class="text-sm text-base-content/70 leading-relaxed">
-                  Sends the ticket content + snapshot accessibility tree to the GitHub Models API.
-                  Writes <code>analysis.json</code> containing scenarios, risks, questions, assumptions, and a <code>snapshotRef</code>.
-                </p>
-              </div>
-              <div class="space-y-2">
-                <div class="collapse collapse-arrow bg-base-300 rounded-lg">
-                  <input type="checkbox" />
-                  <div class="collapse-title text-xs font-semibold">Retry &amp; resilience</div>
-                  <div class="collapse-content text-xs text-base-content/70 space-y-1">
-                    <p>Retries up to <strong>3×</strong> with exponential backoff (5s → 10s → 15s) on any HTTP error or JSON parse failure.</p>
-                    <p>Uses <code>response_format: json_object</code> to prevent prose leaking into the output.</p>
-                    <p>Falls back to <code>GITHUB_TOKEN</code> if no <code>AI_API_KEY</code> secret is set.</p>
-                  </div>
-                </div>
-                <div class="collapse collapse-arrow bg-base-300 rounded-lg">
-                  <input type="checkbox" />
-                  <div class="collapse-title text-xs font-semibold">What the analyst MUST NOT do</div>
-                  <div class="collapse-content text-xs text-base-content/70">
-                    <ul class="list-disc list-inside space-y-1">
-                      <li>Invent business rules not in the ticket</li>
-                      <li>Fabricate error messages or field limits</li>
-                      <li>Invent API behaviour or user permissions</li>
-                      <li>Generate test data without evidence</li>
-                    </ul>
-                    <p class="mt-1">Uncertainties go into <code>questions</code>; reasonable inferences go into <code>assumptions</code> with a confidence level.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <!-- ── FOOTER ── -->
+      <footer
+        class="footer footer-center text-base-content/40 text-xs py-6 border-t border-base-content/10"
+      >
+        <div>
+          QA Simple · GitHub Actions Pipeline · Agents: Requirement Analyst +
+          Playwright Generator
         </div>
-
-        <!-- Stage 4 -->
-        <div class="card card-border bg-base-200 stage-card">
-          <div class="card-body">
-            <h3 class="card-title">
-              <span class="badge badge-soft badge-info">4</span>
-              Playwright Generator — Test generation &amp; validation
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <p class="text-sm text-base-content/70 leading-relaxed">
-                  Runs <code>ci-run-generator.js</code> with the 
-                  <strong>Playwright Generator</strong> system prompt. 
-                  Reads <code>analysis.json</code> and the snapshot bundle. 
-                  The accessibility tree (<code>snapshot.md</code>) is the 
-                  <em>single source of truth for locators</em> — no invented selectors allowed.
-                </p>
-                <p class="text-sm text-base-content/70 leading-relaxed">
-                  Also auto-copies <code>analysis.json → approved-analysis.json</code> for CI 
-                  (the PR review is the real human gate). Runs <code>npm run test:ticket</code> 
-                  non-fatally — a red result still produces the PR so the reviewer can investigate.
-                </p>
-              </div>
-              <div class="space-y-2">
-                <div class="text-xs bg-base-300 rounded p-3">
-                  <div class="font-semibold mb-1">Locator priority order</div>
-                  <ol class="list-decimal list-inside space-y-0.5 text-base-content/70">
-                    <li><code>page.getByRole()</code></li>
-                    <li><code>page.getByLabel()</code></li>
-                    <li><code>page.getByPlaceholder()</code></li>
-                    <li><code>page.getByText()</code></li>
-                    <li><code>page.getByTestId()</code></li>
-                    <li>CSS selector (last resort only)</li>
-                  </ol>
-                </div>
-                <div role="alert" class="alert alert-soft alert-warning text-xs py-2">
-                  <strong>Forbidden:</strong> random classes, <code>nth-child</code>, brittle XPath, <code>page.waitForTimeout()</code>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div>
+          Workflows: <code>qa-triage.yml</code> · <code>issue-to-qa.yml</code> ·
+          <code>validate-qa-plan.yml</code> · <code>start.yml</code>
         </div>
+      </footer>
+    </div>
 
-        <!-- Stage 5 -->
-        <div class="card card-border bg-base-200 stage-card">
-          <div class="card-body">
-            <h3 class="card-title">
-              <span class="badge badge-soft badge-success">5</span>
-              Open PR — Structured pull request with all artifacts
-            </h3>
-            <p class="text-sm text-base-content/70 leading-relaxed">
-              Runs <code>ci-build-pr-body.js</code> to assemble a rich PR body from the ticket artifacts — 
-              scenario list, test run summary, traceability table, and a reviewer checklist. 
-              Creates the PR with labels <code class="badge badge-xs badge-soft badge-success">qa-automated</code> 
-              and <code class="badge badge-xs badge-soft badge-info">needs-review</code>, 
-              assigned to the original issue author. Posts a comment on the issue with the PR link and next steps.
-            </p>
-          </div>
-        </div>
+    <!-- Mermaid theme-aware init -->
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.esm.min.mjs';
 
-        <!-- Escalation -->
-        <div class="card card-border bg-error/10 border-error/30 stage-card">
-          <div class="card-body">
-            <h3 class="card-title text-error">
-              <span class="badge badge-soft badge-error">6</span>
-              Escalation — Automatic human notification on failure
-            </h3>
-            <p class="text-sm text-base-content/70 leading-relaxed">
-              Runs <strong>only when any upstream stage fails</strong>. Posts a structured comment on the source issue 
-              listing exactly which stages failed, a direct link to the workflow run, and retry instructions.
-              Applies the <code class="badge badge-xs badge-soft badge-error">escalation-needed</code> label 
-              so maintainers can filter for issues needing attention.
-              A failed snapshot is <em>not</em> escalated — it's expected for unreachable URLs.
-            </p>
-          </div>
-        </div>
+      const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const paint = document.createElement('canvas').getContext('2d');
 
-      </div>
-    </section>
+      function toRgba(color) {
+        paint.clearRect(0, 0, 1, 1);
+        paint.fillStyle = '#000';
+        paint.fillStyle = color;
+        paint.fillRect(0, 0, 1, 1);
+        return paint.getImageData(0, 0, 1, 1).data;
+      }
 
-    <!-- ── VALIDATION ── -->
-    <section id="validation" class="stage-card">
-      <h2 class="text-2xl font-bold mb-1">PR Gates — Validation &amp; Review</h2>
-      <div class="divider mt-0"></div>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      function pageIsDark() {
+        const root = document.documentElement;
+        const bg = toRgba(getComputedStyle(root).backgroundColor);
+        const body = document.body
+          ? toRgba(getComputedStyle(document.body).backgroundColor)
+          : null;
+        const [r, g, b] = body && body[3] > 10 ? body : bg;
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        return luminance < 0.5;
+      }
 
-        <div class="card card-border bg-base-200">
-          <div class="card-body gap-2">
-            <h3 class="card-title text-sm">
-              <span class="badge badge-soft badge-primary">required check</span>
-              Plan structure &amp; traceability
-            </h3>
-            <ul class="text-xs text-base-content/70 space-y-1 list-disc list-inside">
-              <li><code>ticket.md</code> exists</li>
-              <li><code>analysis.json</code> is valid JSON</li>
-              <li>Required fields present: <code>ticketId</code>, <code>feature</code>, <code>scenarios</code></li>
-              <li>Scenarios array is non-empty</li>
-              <li><code>snapshotRef</code> set (warning if missing)</li>
-              <li>At least one <code>.spec.ts</code> in <code>generated/</code></li>
-              <li><code>approved-analysis.json</code> exists (warning if missing)</li>
-            </ul>
-            <div class="text-xs text-base-content/50 mt-1">Exit code 1 on errors → PR cannot merge.</div>
-          </div>
-        </div>
+      async function renderMermaid() {
+        const theme = pageIsDark() ? 'dark' : 'default';
+        await mermaid.initialize({
+          startOnLoad: false,
+          theme,
+          flowchart: { curve: 'basis' },
+        });
+        await mermaid.run({ querySelector: '.mermaid' });
+      }
 
-        <div class="card card-border bg-base-200">
-          <div class="card-body gap-2">
-            <h3 class="card-title text-sm">
-              <span class="badge badge-soft badge-secondary">required check</span>
-              TypeScript spec typecheck
-            </h3>
-            <p class="text-xs text-base-content/70 leading-relaxed">
-              Runs <code>npx tsc --noEmit</code> on all spec files. 
-              Catches type errors in generated tests before they reach <code>main</code> — 
-              no browser needed, runs in under 10 seconds.
-            </p>
-          </div>
-        </div>
-
-        <div class="card card-border bg-base-200">
-          <div class="card-body gap-2">
-            <h3 class="card-title text-sm">
-              <span class="badge badge-soft badge-accent">CODEOWNERS</span>
-              Required human review
-            </h3>
-            <p class="text-xs text-base-content/70 leading-relaxed">
-              <code>.github/CODEOWNERS</code> requires at least one approved review from a named 
-              team or owner before any <code>tickets/</code> change merges. This is the primary safety gate — 
-              AI output is never auto-merged.
-            </p>
-            <div class="text-xs font-mono bg-base-300 rounded p-2 space-y-0.5">
-              <div>/tickets/  → @YOUR_TEAM</div>
-              <div>/.github/  → @YOUR_USERNAME</div>
-              <div>/scripts/  → @YOUR_USERNAME</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ── LABEL LIFECYCLE ── -->
-    <section id="labels" class="stage-card">
-      <h2 class="text-2xl font-bold mb-1">Label Lifecycle</h2>
-      <div class="divider mt-0"></div>
-      <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-        <table class="table table-zebra">
-          <thead>
-            <tr>
-              <th>Label</th>
-              <th>Applied by</th>
-              <th>Means</th>
-              <th>Triggers</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="badge badge-soft badge-warning">qa-pending</span></td>
-              <td>Issue template (on submit)</td>
-              <td>Ticket submitted, triage not yet run</td>
-              <td><code>qa-triage.yml</code></td>
-            </tr>
-            <tr>
-              <td><span class="badge badge-soft badge-error">needs-more-info</span></td>
-              <td><code>qa-triage.yml</code> (fail path)</td>
-              <td>Ticket incomplete — PM needs to edit</td>
-              <td>Nothing (waits for PM to edit issue)</td>
-            </tr>
-            <tr>
-              <td><span class="badge badge-soft badge-success">qa-ready</span></td>
-              <td><code>qa-triage.yml</code> (pass path)</td>
-              <td>Triage passed, pipeline starting</td>
-              <td><code>issue-to-qa.yml</code></td>
-            </tr>
-            <tr>
-              <td><span class="badge badge-soft badge-info">qa-automated</span></td>
-              <td><code>issue-to-qa.yml</code> (on PR)</td>
-              <td>PR opened by the pipeline</td>
-              <td>—</td>
-            </tr>
-            <tr>
-              <td><span class="badge badge-soft badge-secondary">needs-review</span></td>
-              <td><code>issue-to-qa.yml</code> (on PR)</td>
-              <td>PR awaiting human review</td>
-              <td>—</td>
-            </tr>
-            <tr>
-              <td><span class="badge badge-soft badge-error">escalation-needed</span></td>
-              <td><code>issue-to-qa.yml</code> (escalate job)</td>
-              <td>Pipeline failed — human intervention needed</td>
-              <td>—</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- ── SETUP CHECKLIST ── -->
-    <section id="setup" class="stage-card">
-      <h2 class="text-2xl font-bold mb-1">Repository Setup Checklist</h2>
-      <p class="text-base-content/60 text-sm mb-2">Everything required before the pipeline runs for the first time.</p>
-      <div class="divider mt-0"></div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-        <div class="card card-border bg-base-200">
-          <div class="card-body gap-3">
-            <h3 class="card-title text-sm">GitHub Labels</h3>
-            <p class="text-xs text-base-content/60">Create in Settings → Labels. The pipeline uses these names exactly.</p>
-            <div class="flex flex-wrap gap-2">
-              <span class="badge badge-soft badge-warning">qa-pending</span>
-              <span class="badge badge-soft badge-success">qa-ready</span>
-              <span class="badge badge-soft badge-error">needs-more-info</span>
-              <span class="badge badge-soft badge-info">qa-automated</span>
-              <span class="badge badge-soft badge-secondary">needs-review</span>
-              <span class="badge badge-soft badge-error">escalation-needed</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="card card-border bg-base-200">
-          <div class="card-body gap-3">
-            <h3 class="card-title text-sm">Branch Protection on <code>main</code></h3>
-            <p class="text-xs text-base-content/60">Settings → Branches → Add rule for <code>main</code>:</p>
-            <ul class="text-xs text-base-content/70 space-y-1 list-disc list-inside">
-              <li>Require status check: <strong>QA plan structure &amp; traceability</strong></li>
-              <li>Require status check: <strong>TypeScript spec typecheck</strong></li>
-              <li>Require approving review (min 1, from CODEOWNERS)</li>
-              <li>Dismiss stale reviews on new commits</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="card card-border bg-base-200">
-          <div class="card-body gap-3">
-            <h3 class="card-title text-sm">CODEOWNERS</h3>
-            <p class="text-xs text-base-content/60">
-              Edit <code>.github/CODEOWNERS</code> — replace placeholder handles with real ones:
-            </p>
-            <div class="text-xs font-mono bg-base-300 rounded p-2 space-y-0.5">
-              <div>*              @YOUR_USERNAME</div>
-              <div>/tickets/      @YOUR_TEAM</div>
-              <div>/.github/      @YOUR_USERNAME</div>
-              <div>/scripts/      @YOUR_USERNAME</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card card-border bg-base-200">
-          <div class="card-body gap-3">
-            <h3 class="card-title text-sm">Secrets &amp; Variables</h3>
-            <p class="text-xs text-base-content/60">Settings → Secrets and variables → Actions:</p>
-            <div class="overflow-x-auto">
-              <table class="table table-xs">
-                <thead><tr><th>Name</th><th>Type</th><th>Required</th></tr></thead>
-                <tbody>
-                  <tr><td><code>AI_API_KEY</code></td><td>Secret</td><td>No — falls back to <code>GITHUB_TOKEN</code></td></tr>
-                  <tr><td><code>QA_AI_MODEL_ENDPOINT</code></td><td>Variable</td><td>No — defaults to GitHub Models</td></tr>
-                  <tr><td><code>QA_AI_MODEL</code></td><td>Variable</td><td>No — defaults to <code>openai/gpt-4o</code></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ── FOOTER ── -->
-    <footer class="footer footer-center text-base-content/40 text-xs py-6 border-t border-base-content/10">
-      <div>QA Simple · GitHub Actions Pipeline · Agents: Requirement Analyst + Playwright Generator</div>
-      <div>Workflows: <code>qa-triage.yml</code> · <code>issue-to-qa.yml</code> · <code>validate-qa-plan.yml</code> · <code>start.yml</code></div>
-    </footer>
-
-  </div>
-
-  <!-- Mermaid theme-aware init -->
-  <script type="module">
-    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.esm.min.mjs";
-
-    const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const paint = document.createElement("canvas").getContext("2d");
-
-    function toRgba(color) {
-      paint.clearRect(0, 0, 1, 1);
-      paint.fillStyle = "#000";
-      paint.fillStyle = color;
-      paint.fillRect(0, 0, 1, 1);
-      return paint.getImageData(0, 0, 1, 1).data;
-    }
-
-    function pageIsDark() {
-      const root = document.documentElement;
-      const bg = toRgba(getComputedStyle(root).backgroundColor);
-      const body = document.body ? toRgba(getComputedStyle(document.body).backgroundColor) : null;
-      const [r, g, b] = body && body[3] > 10 ? body : bg;
-      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      return luminance < 0.5;
-    }
-
-    async function renderMermaid() {
-      const theme = pageIsDark() ? "dark" : "default";
-      await mermaid.initialize({ startOnLoad: false, theme, flowchart: { curve: "basis" } });
-      await mermaid.run({ querySelector: ".mermaid" });
-    }
-
-    renderMermaid();
-  </script>
-
-</body>
+      renderMermaid();
+    </script>
+  </body>
 </html>
