@@ -1,0 +1,106 @@
+name: QA Ticket
+description: >
+  Request automated QA analysis and Playwright test generation.
+  Submit the form — the pipeline starts automatically, no manual label needed.
+title: "[QA]: "
+labels: [qa-pending]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## How this works
+        1. Fill in the form below and submit — no extra steps needed.
+        2. **QA Triage** runs automatically and checks ticket completeness:
+           - ✅ Complete → `qa-ready` label applied → full pipeline starts
+           - ⚠️ Incomplete → a comment lists exactly what's missing → edit the issue to re-trigger
+        3. The full pipeline will:
+           - Capture a live snapshot of the target page
+           - Run the **Requirement Analyst** to extract acceptance criteria
+           - Run the **Playwright Generator** to produce `.spec.ts` files
+           - Open a **Pull Request** with all artifacts for your review
+
+        > **Manual override:** maintainers can trigger the pipeline from the
+        > [Actions tab](../../actions/workflows/issue-to-qa.yml) via *Run workflow*.
+        4. Review the PR, approve `analysis.json` → `approved-analysis.json`, then merge.
+
+  - type: input
+    id: target-url
+    attributes:
+      label: Target URL
+      description: >
+        The URL of the page or feature to test.
+        Leave blank if not yet available (the analyst will record it as a question).
+      placeholder: "https://example.com/login"
+    validations:
+      required: false
+
+  - type: input
+    id: feature-title
+    attributes:
+      label: Feature Title
+      description: Short name for the feature or behavior under test (used as the ticket title).
+      placeholder: "Login form validation"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: >
+        Describe the feature or behavior to test. Include context, constraints,
+        user roles, or any relevant notes.
+      placeholder: |
+        The login form must validate the email and password fields before
+        submitting. It should display inline error messages for empty fields
+        and redirect to /dashboard on successful login.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: >
+        One criterion per line, starting with `-`.
+        These drive the scenario extraction in the analysis step.
+      placeholder: |
+        - Shows an error when the email field is empty
+        - Shows an error when the password field is empty
+        - Accepts a valid email + password and redirects to /dashboard
+        - Disables the submit button while the request is in flight
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of Scope
+      description: Anything explicitly NOT covered by this ticket (optional).
+      placeholder: |
+        - Password reset flow
+        - OAuth / social login
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: >
+        Screenshots, Figma links, related issues, API contracts, or any other
+        relevant information (optional).
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: trigger-reminder
+    attributes:
+      label: Pipeline trigger reminder
+      options:
+        - label: >
+            I understand the QA Triage agent will review this ticket automatically
+            and start the pipeline once it passes the completeness check.
+          required: true

@@ -1,0 +1,226 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# qa-triage.yml
+#
+# QA Triage — lightweight completeness check that runs the moment a PM
+# submits (or edits) a qa-ticket issue.
+#
+# TRIGGERS:
+#   issues: [labeled]  — fires when the issue template auto-applies 'qa-pending'
+#   issues: [edited]   — re-runs triage when a PM edits an incomplete issue
+#
+# FLOW:
+#   1. Confirm the issue carries 'qa-pending' (guard against unrelated labels/edits)
+#   2. Call the AI with a fast completeness prompt (< 60 s)
+#   3a. Complete  → remove 'qa-pending', apply 'qa-ready', post approval comment
+#   3b. Incomplete → keep 'qa-pending', apply 'needs-more-info', post gap comment
+#
+# REQUIRED LABELS (create in Settings → Labels):
+#   qa-pending       — applied automatically by the issue template
+#   qa-ready         — applied by triage on success  → triggers issue-to-qa.yml
+#   needs-more-info  — applied by triage when gaps are found
+#
+# REQUIRED SECRETS / VARIABLES (same as issue-to-qa.yml):
+#   GITHUB_TOKEN           — standard, no extra config needed
+#   AI_API_KEY             — optional override (falls back to GITHUB_TOKEN)
+#   QA_AI_MODEL_ENDPOINT   — optional override (default: GitHub Models)
+#   QA_AI_MODEL            — optional override (default: openai/gpt-4o)
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: QA Triage
+
+on:
+  issues:
+    types: [labeled, edited]
+
+# Cancel a previous triage run for the same issue if a new one fires
+# (e.g. PM edits issue while triage is still running)
+concurrency:
+  group: qa-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  triage:
+    name: "Completeness check"
+    # Guard: only run when the issue actually has qa-pending.
+    # For 'labeled' events check the applied label directly.
+    # For 'edited' events check the labels list.
+    if: |
+      (github.event.action == 'labeled'  && github.event.label.name == 'qa-pending') ||
+      (github.event.action == 'edited'   && contains(toJSON(github.event.issue.labels), 'qa-pending'))
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      models: read
+
+    steps:
+      - name: Run triage completeness check
+        id: triage
+        env:
+          GITHUB_TOKEN:         ${{ secrets.GITHUB_TOKEN }}
+          AI_API_KEY:           ${{ secrets.AI_API_KEY }}
+          QA_AI_MODEL_ENDPOINT: ${{ vars.QA_AI_MODEL_ENDPOINT }}
+          QA_AI_MODEL:          ${{ vars.QA_AI_MODEL }}
+          ISSUE_TITLE:          ${{ github.event.issue.title }}
+          ISSUE_BODY:           ${{ github.event.issue.body }}
+          ISSUE_NUMBER:         ${{ github.event.issue.number }}
+        run: |
+          node - << 'JS'
+          const { execSync } = require('child_process');
+
+          const API_KEY  = process.env.AI_API_KEY || process.env.GITHUB_TOKEN;
+          const ENDPOINT = process.env.QA_AI_MODEL_ENDPOINT
+            || 'https://models.inference.ai.azure.com/chat/completions';
+          const MODEL    = process.env.QA_AI_MODEL || 'openai/gpt-4o';
+
+          const title = process.env.ISSUE_TITLE || '';
+          const body  = process.env.ISSUE_BODY  || '';
+
+          const systemPrompt = `You are a QA ticket completeness checker.
+          Your only job is to decide whether a QA ticket has enough information
+          for automated test generation. Output ONLY valid JSON — no prose.`;
+
+          const userPrompt = `Evaluate this QA ticket for completeness.
+
+          ## Ticket Title
+          ${title}
+
+          ## Ticket Body
+          ${body}
+
+          ## Evaluation Rules
+          A ticket is COMPLETE if it has ALL of:
+          1. A feature or behavior to test (non-trivial description, at least 2 sentences or bullets)
+          2. At least one acceptance criterion (line starting with - or a numbered item)
+          3. Either a target URL OR an explicit note that it is not yet available
+
+          A ticket is INCOMPLETE if any of the above are missing or too vague to generate tests.
+
+          ## Output format (JSON only)
+          {
+            "complete": true | false,
+            "score": 0-100,
+            "missing": ["list of specific missing items — empty array if complete"],
+            "suggestions": ["one-line actionable tip per missing item — empty if complete"],
+            "summary": "one sentence — why it passed or the top gap"
+          }`;
+
+          async function run() {
+            const res = await fetch(ENDPOINT, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${API_KEY}`,
+              },
+              body: JSON.stringify({
+                model: MODEL,
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user',   content: userPrompt   },
+                ],
+                temperature: 0,
+                max_tokens: 512,
+                response_format: { type: 'json_object' },
+              }),
+            });
+
+            if (!res.ok) {
+              const txt = await res.text();
+              throw new Error(`AI API error ${res.status}: ${txt.slice(0, 300)}`);
+            }
+
+            const data   = await res.json();
+            const result = JSON.parse(data.choices[0].message.content);
+
+            // Write outputs for subsequent steps
+            const fs = require('fs');
+            const output = process.env.GITHUB_OUTPUT;
+            fs.appendFileSync(output, `complete=${result.complete}\n`);
+            fs.appendFileSync(output, `score=${result.score ?? 0}\n`);
+            fs.appendFileSync(output, `summary=${(result.summary || '').replace(/\n/g, ' ')}\n`);
+
+            // Write full result as a file for the comment step
+            fs.writeFileSync('triage_result.json', JSON.stringify(result, null, 2));
+            console.log('Triage result:', JSON.stringify(result, null, 2));
+          }
+
+          run().catch(err => { console.error(err.message); process.exit(1); });
+          JS
+
+      # ── PASS path ──────────────────────────────────────────────────────────
+      - name: "✅ Approve — apply qa-ready label"
+        if: steps.triage.outputs.complete == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "${{ github.event.issue.number }}" \
+            --remove-label "qa-pending" \
+            --add-label    "qa-ready"   || true
+          # Also remove needs-more-info if it was previously set
+          gh issue edit "${{ github.event.issue.number }}" \
+            --remove-label "needs-more-info" 2>/dev/null || true
+
+      - name: "✅ Comment — ticket approved"
+        if: steps.triage.outputs.complete == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SCORE:    ${{ steps.triage.outputs.score }}
+          SUMMARY:  ${{ steps.triage.outputs.summary }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" \
+            --body "✅ **QA Triage passed** (score: ${SCORE}/100)
+
+          ${SUMMARY}
+
+          The \`qa-ready\` label has been applied — the full QA pipeline will start shortly.
+
+          | Stage | Status |
+          |-------|--------|
+          | Triage | ✅ Complete |
+          | Page Snapshot | ⏳ Starting |
+          | Requirement Analyst | ⏳ Queued |
+          | Playwright Generator | ⏳ Queued |
+          | Pull Request | ⏳ Queued |
+
+          _Triage run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_"
+
+      # ── FAIL path ──────────────────────────────────────────────────────────
+      - name: "⚠️ Reject — apply needs-more-info label"
+        if: steps.triage.outputs.complete == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "${{ github.event.issue.number }}" \
+            --add-label "needs-more-info" || true
+
+      - name: "⚠️ Comment — list gaps"
+        if: steps.triage.outputs.complete == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SCORE:    ${{ steps.triage.outputs.score }}
+          SUMMARY:  ${{ steps.triage.outputs.summary }}
+        run: |
+          # Build gap list from triage_result.json
+          GAPS=$(node -e "
+            const r = JSON.parse(require('fs').readFileSync('triage_result.json','utf8'));
+            const missing     = (r.missing     || []).map((m,i) => '- ❌ ' + m);
+            const suggestions = (r.suggestions || []).map((s,i) => '  _' + s + '_');
+            const lines = [];
+            missing.forEach((m,i) => { lines.push(m); if(suggestions[i]) lines.push(suggestions[i]); });
+            console.log(lines.join('\n'));
+          ")
+
+          gh issue comment "${{ github.event.issue.number }}" \
+            --body "⚠️ **QA Triage — ticket incomplete** (score: ${SCORE}/100)
+
+          ${SUMMARY}
+
+          **Please address the following before the pipeline can start:**
+
+          ${GAPS}
+
+          Once you have updated the issue, the triage check will re-run automatically.
+          _Triage run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_"
