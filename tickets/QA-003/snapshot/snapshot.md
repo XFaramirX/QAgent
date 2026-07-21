@@ -1,0 +1,82 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - img [ref=e4]
+    - generic [ref=e5]:
+      - list [ref=e8]:
+        - listitem [ref=e9]:
+          - link " Homepage" [ref=e10] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e11]: 
+            - text: Homepage
+        - listitem [ref=e12]:
+          - link "  Single UI Elements" [ref=e13] [cursor=pointer]:
+            - /url: javascript:;
+            - generic [ref=e14]: 
+            - generic [ref=e15]: 
+            - text: Single UI Elements
+          - list [ref=e16]:
+            - listitem [ref=e17]:
+              - link "Inputs" [ref=e18] [cursor=pointer]:
+                - /url: /elements/input
+            - listitem [ref=e19]:
+              - link "Buttons" [ref=e20] [cursor=pointer]:
+                - /url: /elements/button
+            - listitem [ref=e21]:
+              - link "Checkbox" [ref=e22] [cursor=pointer]:
+                - /url: /elements/checkbox
+            - listitem [ref=e23]:
+              - link "Select" [ref=e24] [cursor=pointer]:
+                - /url: /elements/select
+            - listitem [ref=e25]:
+              - link "New tab" [ref=e26] [cursor=pointer]:
+                - /url: /elements/new_tab
+            - listitem [ref=e27]:
+              - link "Text area" [ref=e28] [cursor=pointer]:
+                - /url: /elements/textarea
+            - listitem [ref=e29]:
+              - link "Alerts" [ref=e30] [cursor=pointer]:
+                - /url: /elements/alert
+            - listitem [ref=e31]:
+              - link "Drag and Drop" [ref=e32] [cursor=pointer]:
+                - /url: /elements/dragndrop
+            - listitem [ref=e33]:
+              - link "Iframes" [ref=e34] [cursor=pointer]:
+                - /url: /elements/iframe/iframe_page
+            - listitem [ref=e35]:
+              - link "Pop-Up" [ref=e36] [cursor=pointer]:
+                - /url: /elements/popup
+        - listitem [ref=e37]:
+          - link "  Forms" [ref=e38] [cursor=pointer]:
+            - /url: javascript:;
+            - generic [ref=e39]: 
+            - generic [ref=e40]: 
+            - text: Forms
+      - generic [ref=e41]:
+        - heading "Input field" [level=1] [ref=e42]
+        - list [ref=e43]:
+          - listitem [ref=e44]:
+            - link "Text input" [ref=e45] [cursor=pointer]:
+              - /url: /elements/input/simple
+          - listitem [ref=e46]:
+            - link "Email field" [ref=e47] [cursor=pointer]:
+              - /url: /elements/input/email
+          - listitem [ref=e48]:
+            - link "Password field" [ref=e49] [cursor=pointer]:
+              - /url: /elements/input/passwd
+        - generic [ref=e51]:
+          - generic [ref=e52]: Text string*
+          - textbox "Text string*" [ref=e53]:
+            - /placeholder: Submit me
+        - button "Requirements:" [ref=e54] [cursor=pointer]:
+          - img [ref=e55]
+          - text: "Requirements:"
+  - generic [ref=e57]:
+    - link "Contact" [ref=e58] [cursor=pointer]:
+      - /url: /contact/
+    - link "What's new" [ref=e59] [cursor=pointer]:
+      - /url: /whats_new/
+  - contentinfo [ref=e60]:
+    - generic [ref=e61]:
+      - text: "© 2026 Copyright:"
+      - link "www.qa-practice.com" [ref=e62] [cursor=pointer]:
+        - /url: https://www.qa-practice.com/

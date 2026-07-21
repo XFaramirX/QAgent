@@ -1,0 +1,130 @@
+{
+  "ticketId": "QA-003",
+  "feature": "Simple text input field — submit & validation",
+  "targetUrl": "https://www.qa-practice.com/elements/input/simple",
+  "snapshotRef": "tickets/QA-003/snapshot/",
+  "summary": "The target page provides a single required text input (id: id_text_string, label: Text string*). Submission is triggered by pressing Enter (no explicit submit button). After a valid non-empty submission the page echoes the submitted value as a visible result. An empty submission is blocked by the browser's native required-field validation, so no success message appears.",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-001",
+      "criterion": "Typing text into the input field and submitting displays a success message.",
+      "testable": true
+    },
+    {
+      "id": "AC-002",
+      "criterion": "The success message contains or reflects the submitted value.",
+      "testable": true
+    },
+    {
+      "id": "AC-003",
+      "criterion": "Submitting with an empty field does not show a success message.",
+      "testable": true
+    },
+    {
+      "id": "AC-004",
+      "criterion": "The input field is accessible by label or role.",
+      "testable": true
+    },
+    {
+      "id": "AC-005",
+      "criterion": "The form submission mechanism is keyboard accessible.",
+      "testable": true
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "TS-001",
+      "type": "positive",
+      "scenario": "Page load shows a visible, labeled text input.",
+      "steps": [
+        "Navigate to https://www.qa-practice.com/elements/input/simple",
+        "Locate the element by role textbox with name 'Text string*'",
+        "Assert it is visible"
+      ],
+      "expectedResult": "A visible textbox labeled 'Text string*' is present on initial page load.",
+      "linkedCriteria": ["AC-004"],
+      "priority": "high"
+    },
+    {
+      "id": "TS-002",
+      "type": "positive",
+      "scenario": "Submitting a non-empty value echoes it on the page.",
+      "steps": [
+        "Navigate to the target URL",
+        "Fill the input with a test string",
+        "Press Enter to submit the form",
+        "Assert the submitted value is visible in the response area"
+      ],
+      "expectedResult": "The submitted value appears visibly on the page after submission.",
+      "linkedCriteria": ["AC-001", "AC-002"],
+      "priority": "high"
+    },
+    {
+      "id": "TS-003",
+      "type": "negative",
+      "scenario": "Submitting an empty field does not display a success message.",
+      "steps": [
+        "Navigate to the target URL",
+        "Leave the input empty",
+        "Attempt to submit by pressing Enter",
+        "Assert no success/result text is displayed"
+      ],
+      "expectedResult": "No success message is shown; native required-field validation blocks the submission.",
+      "linkedCriteria": ["AC-003"],
+      "priority": "high"
+    },
+    {
+      "id": "TS-004",
+      "type": "accessibility",
+      "scenario": "Input is accessible by role and label.",
+      "steps": [
+        "Navigate to the target URL",
+        "Locate the input via getByRole('textbox', { name: 'Text string*' })",
+        "Assert the element is visible and editable"
+      ],
+      "expectedResult": "The input is reachable and interactable through its ARIA role and associated label.",
+      "linkedCriteria": ["AC-004"],
+      "priority": "medium"
+    },
+    {
+      "id": "TS-005",
+      "type": "accessibility",
+      "scenario": "Form submission is keyboard accessible.",
+      "steps": [
+        "Navigate to the target URL",
+        "Tab to the text input",
+        "Type a value",
+        "Press Enter",
+        "Assert the submitted value is visible"
+      ],
+      "expectedResult": "The entire submission flow is completable with keyboard only.",
+      "linkedCriteria": ["AC-005"],
+      "priority": "medium"
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ASM-001",
+      "assumption": "There is no explicit Submit button; the form is submitted by pressing Enter while focused on the input.",
+      "confidence": "high"
+    },
+    {
+      "id": "ASM-002",
+      "assumption": "The success response echoes the submitted text exactly as entered.",
+      "confidence": "high"
+    }
+  ],
+  "risks": [
+    {
+      "id": "RISK-001",
+      "risk": "Native browser validation for required fields may behave differently across browser engines.",
+      "severity": "low",
+      "recommendation": "Run tests in Chromium where native constraint validation is consistent."
+    }
+  ],
+  "questions": [],
+  "recommendation": {
+    "status": "approved",
+    "comment": "All acceptance criteria are fully covered by the defined scenarios. Page evidence confirms the submission mechanism and success response behaviour."
+  }
+}

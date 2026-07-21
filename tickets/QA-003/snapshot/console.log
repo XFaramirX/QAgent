@@ -1,0 +1,14 @@
+Total messages: 2 (Errors: 1, Warnings: 1)
+
+[WARNING] jQuery.Deferred exception: handleToggleNavProfile is not defined ReferenceError: handleToggleNavProfile is not defined
+    at Object.initSidebar (https://www.qa-practice.com/static/home/js/main.js:211:114)
+    at Object.init (https://www.qa-practice.com/static/home/js/main.js:208:53)
+    at HTMLDocument.<anonymous> (https://www.qa-practice.com/static/home/js/main.js:235:9)
+    at mightThrow (https://code.jquery.com/jquery-3.6.2.js:3831:29)
+    at process (https://code.jquery.com/jquery-3.6.2.js:3899:12) undefined @ https://code.jquery.com/jquery-3.6.2.js:4114
+Uncaught ReferenceError: handleToggleNavProfile is not defined
+    at initSidebar (https://www.qa-practice.com/static/home/js/main.js:210:113)
+    at init (https://www.qa-practice.com/static/home/js/main.js:207:52)
+    at <anonymous> (https://www.qa-practice.com/static/home/js/main.js:234:8)
+    at mightThrow (https://code.jquery.com/jquery-3.6.2.js:3830:28)
+    at process (https://code.jquery.com/jquery-3.6.2.js:3898:11)
