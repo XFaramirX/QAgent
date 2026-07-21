@@ -1,0 +1,109 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# validate-qa-plan.yml
+#
+# Required status check — runs on every PR that touches tickets/** or scripts/**
+#
+# CHECKS:
+#   1. Every changed ticket has a valid analysis.json (required fields + schema)
+#   2. At least one scenario is defined
+#   3. snapshotRef is set (traceability)
+#   4. ticket.md exists
+#   5. Generated spec file(s) exist
+#
+# This job MUST pass before merging (enforce via Settings → Branch protection).
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: Validate QA Plan
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'tickets/**'
+      - 'scripts/**'
+
+# Cancel previous runs on the same PR branch to save minutes.
+concurrency:
+  group: validate-qa-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-plan:
+    name: QA plan structure & traceability
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Fetch full history so we can diff against the base branch
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run plan validator
+        id: validate
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: node scripts/ci-validate-plan.js 2>&1 | tee validation-output.txt
+        # Exit code 1 → validation failed (errors found)
+        # Exit code 0 → passed (warnings are OK)
+
+      - name: Post validation result as PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OUTCOME:  ${{ steps.validate.outcome }}
+        run: |
+          BODY=$(cat validation-output.txt | head -100 || echo "No output")
+          if [[ "$OUTCOME" == "success" ]]; then
+            HEADER="✅ **QA Plan validation passed**"
+          else
+            HEADER="❌ **QA Plan validation failed** — PR cannot be merged until errors are resolved"
+          fi
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body "$HEADER
+
+          <details><summary>Validation output</summary>
+
+          \`\`\`
+          $BODY
+          \`\`\`
+
+          </details>
+
+          _Run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Smoke-test: compile TypeScript spec files (no browser needed)
+  # ────────────────────────────────────────────────────────────────────────────
+  typecheck-specs:
+    name: TypeScript spec typecheck
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck all spec files
+        # npx tsc --noEmit will catch type errors without running tests
+        run: npx tsc --noEmit
+        continue-on-error: false

@@ -1,0 +1,458 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# issue-to-qa.yml
+#
+# QA Automation Pipeline — Issue → Analysis → Tests → PR
+#
+# TRIGGERS:
+#   Automatic  — 'qa-ready' label applied by qa-triage.yml after completeness check
+#   Manual     — workflow_dispatch from the Actions tab (operator / re-run use cases)
+#
+# PIPELINE STAGES:
+#   1. setup               — derive ticket ID, create isolated branch, scaffold ticket.md
+#   2. snapshot            — capture live Playwright snapshot of the target URL
+#   3. requirement-analysis — run Requirement Analyst via GitHub Models API
+#   4. playwright-generation — run Playwright Generator via GitHub Models API
+#   5. open-pr             — open a pull request with all artifacts
+#   6. escalate            — comment on the issue and add label if any stage fails
+#
+# REQUIRED LABELS (create in Settings → Labels):
+#   qa-pending        — applied by issue template on submission
+#   qa-ready          — applied by qa-triage.yml when ticket is complete
+#   needs-more-info   — applied by qa-triage.yml when ticket has gaps
+#   qa-automated      — added automatically to generated PRs
+#   needs-review      — added automatically to generated PRs
+#   escalation-needed — added automatically when the pipeline fails
+#
+# REQUIRED SECRETS / VARIABLES (optional — GitHub Models used by default):
+#   AI_API_KEY             — override GITHUB_TOKEN for AI calls (e.g. OpenAI key)
+#   QA_AI_MODEL_ENDPOINT   — override AI endpoint (default: GitHub Models)
+#   QA_AI_MODEL            — override model name (default: openai/gpt-4o)
+#
+# CODEOWNERS:
+#   All tickets/ changes require review per .github/CODEOWNERS.
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: Issue → QA Pipeline
+
+on:
+  issues:
+    types: [labeled]
+
+  # Manual escape hatch — re-run a failed pipeline, run without an issue,
+  # or test a ticket that predates the automation.
+  workflow_dispatch:
+    inputs:
+      ticket-id:
+        description: 'Ticket ID (e.g. QA-007) — must match an existing tickets/ folder or will be created'
+        required: true
+      issue-number:
+        description: 'Source issue number (for traceability comments)'
+        required: true
+      target-url:
+        description: 'Target URL override (leave blank to read from ticket.md)'
+        required: false
+        default: ''
+
+# One pipeline instance per issue at a time.
+# Never cancel-in-progress to avoid partial artifacts.
+concurrency:
+  group: qa-pipeline-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+# ────────────────────────────────────────────────────────────────────────────
+# 1. SETUP — branch isolation + ticket scaffold
+# ────────────────────────────────────────────────────────────────────────────
+jobs:
+  setup:
+    name: "1/5 · Setup branch & ticket"
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'qa-ready'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    outputs:
+      ticket-id: ${{ steps.meta.outputs.ticket-id }}
+      branch:    ${{ steps.meta.outputs.branch }}
+      target-url: ${{ steps.meta.outputs.target-url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive ticket metadata
+        id: meta
+        env:
+          # workflow_dispatch inputs take priority; fall back to issue event values
+          ISSUE_NUMBER:     ${{ github.event_name == 'workflow_dispatch' && inputs.issue-number || github.event.issue.number }}
+          ISSUE_TITLE:      ${{ github.event_name == 'workflow_dispatch' && inputs.ticket-id    || github.event.issue.title }}
+          ISSUE_BODY:       ${{ github.event_name == 'workflow_dispatch' && ''                  || github.event.issue.body }}
+          DISPATCH_TICKET:  ${{ inputs.ticket-id }}
+          DISPATCH_URL:     ${{ inputs.target-url }}
+        run: |
+          # workflow_dispatch: use the provided ticket ID directly
+          if [[ -n "$DISPATCH_TICKET" ]]; then
+            TICKET_ID="$DISPATCH_TICKET"
+          else
+            TICKET_ID="QA-$(printf '%03d' "$ISSUE_NUMBER")"
+          fi
+
+          BRANCH="qa/$(echo "$TICKET_ID" | tr '[:upper:]' '[:lower:]')-issue-${ISSUE_NUMBER}"
+
+          # URL: dispatch override first, then parse from issue body
+          if [[ -n "$DISPATCH_URL" ]]; then
+            TARGET_URL="$DISPATCH_URL"
+          else
+            TARGET_URL=$(printf '%s' "$ISSUE_BODY" \
+              | grep -ioP '(?<=Target URL:\s{0,4})https?://[^\s]+' \
+              | head -1 || true)
+          fi
+
+          echo "ticket-id=$TICKET_ID"   >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH"         >> "$GITHUB_OUTPUT"
+          echo "target-url=$TARGET_URL" >> "$GITHUB_OUTPUT"
+
+          echo "Ticket ID : $TICKET_ID"
+          echo "Branch    : $BRANCH"
+          echo "Target URL: ${TARGET_URL:-<none>}"
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create isolated branch
+        env:
+          BRANCH: ${{ steps.meta.outputs.branch }}
+        run: |
+          git checkout -b "$BRANCH"
+          git push origin "$BRANCH"
+
+      - name: Install Node (for scaffold script)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Scaffold ticket file
+        env:
+          TICKET_ID:    ${{ steps.meta.outputs.ticket-id }}
+          ISSUE_TITLE:  ${{ github.event.issue.title }}
+          ISSUE_BODY:   ${{ github.event.issue.body }}
+          TARGET_URL:   ${{ steps.meta.outputs.target-url }}
+          BRANCH:       ${{ steps.meta.outputs.branch }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          node scripts/ci-create-ticket.js
+          git add "tickets/$TICKET_ID/"
+          git commit -m "chore(qa): scaffold $TICKET_ID from issue #$ISSUE_NUMBER
+
+          Source : issue #$ISSUE_NUMBER — ${{ github.event.issue.title }}
+          Branch : $BRANCH
+          Run    : ${{ github.run_id }}"
+          git push origin "$BRANCH"
+
+      - name: Comment pipeline start on issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TICKET_ID: ${{ steps.meta.outputs.ticket-id }}
+          BRANCH:    ${{ steps.meta.outputs.branch }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" \
+            --body "🤖 **QA Pipeline started** for \`$TICKET_ID\`
+
+          | Item | Value |
+          |------|-------|
+          | Branch | \`$BRANCH\` |
+          | Ticket | \`tickets/$TICKET_ID/ticket.md\` |
+          | Pipeline | [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+
+          The pipeline will capture a page snapshot, run the Requirement Analyst, generate Playwright tests, and open a PR for your review.
+          _Do not remove the \`qa-ready\` label while the pipeline is running._"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 2. SNAPSHOT — capture live page evidence
+  # ────────────────────────────────────────────────────────────────────────────
+  snapshot:
+    name: "2/5 · Capture page snapshot"
+    needs: setup
+    if: needs.setup.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      TICKET_ID:  ${{ needs.setup.outputs.ticket-id }}
+      BRANCH:     ${{ needs.setup.outputs.branch }}
+      TARGET_URL: ${{ needs.setup.outputs.target-url }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Capture snapshot
+        # Non-fatal: if the URL is unreachable the analyst will record it as a risk.
+        if: env.TARGET_URL != ''
+        run: npm run snapshot -- "$TARGET_URL" "$TICKET_ID"
+        continue-on-error: true
+        timeout-minutes: 3
+
+      - name: Commit snapshot
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "tickets/$TICKET_ID/snapshot/" 2>/dev/null || true
+          # Only commit if there is something staged
+          git diff --cached --quiet \
+            || git commit -m "chore(qa): capture page snapshot for $TICKET_ID [skip ci]
+
+          Run: ${{ github.run_id }}"
+          git push origin "$BRANCH"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 3. REQUIREMENT ANALYSIS — Requirement Analyst (AI)
+  # ────────────────────────────────────────────────────────────────────────────
+  requirement-analysis:
+    name: "3/5 · Requirement Analyst"
+    needs: [setup, snapshot]
+    # Run even if snapshot was skipped; fail fast if setup failed.
+    if: needs.setup.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      models: read   # GitHub Models API
+
+    env:
+      TICKET_ID: ${{ needs.setup.outputs.ticket-id }}
+      BRANCH:    ${{ needs.setup.outputs.branch }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Requirement Analyst
+        env:
+          GITHUB_TOKEN:          ${{ secrets.GITHUB_TOKEN }}
+          AI_API_KEY:            ${{ secrets.AI_API_KEY }}
+          QA_AI_MODEL_ENDPOINT:  ${{ vars.QA_AI_MODEL_ENDPOINT }}
+          QA_AI_MODEL:           ${{ vars.QA_AI_MODEL }}
+        run: node scripts/ci-run-analyst.js "$TICKET_ID"
+        timeout-minutes: 10
+
+      - name: Commit analysis
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "tickets/$TICKET_ID/"
+          git commit -m "feat(qa): requirement analysis for $TICKET_ID
+
+          Agent : Requirement Analyst (CI)
+          Issue : #${{ github.event.issue.number }}
+          Run   : ${{ github.run_id }}"
+          git push origin "$BRANCH"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 4. PLAYWRIGHT GENERATION — Playwright Generator (AI)
+  # ────────────────────────────────────────────────────────────────────────────
+  playwright-generation:
+    name: "4/5 · Playwright Generator"
+    needs: [setup, requirement-analysis]
+    if: needs.requirement-analysis.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      models: read
+
+    env:
+      TICKET_ID: ${{ needs.setup.outputs.ticket-id }}
+      BRANCH:    ${{ needs.setup.outputs.branch }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright Generator
+        env:
+          GITHUB_TOKEN:          ${{ secrets.GITHUB_TOKEN }}
+          AI_API_KEY:            ${{ secrets.AI_API_KEY }}
+          QA_AI_MODEL_ENDPOINT:  ${{ vars.QA_AI_MODEL_ENDPOINT }}
+          QA_AI_MODEL:           ${{ vars.QA_AI_MODEL }}
+        run: node scripts/ci-run-generator.js "$TICKET_ID"
+        timeout-minutes: 10
+
+      - name: Run generated tests (non-fatal validation)
+        # Tests may fail against live environments; the PR review handles this.
+        run: npm run test:ticket -- "$TICKET_ID"
+        continue-on-error: true
+        timeout-minutes: 10
+
+      - name: Commit generated tests & results
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "tickets/$TICKET_ID/"
+          git diff --cached --quiet \
+            || git commit -m "feat(qa): generated Playwright tests for $TICKET_ID
+
+          Agent : Playwright Generator (CI)
+          Issue : #${{ github.event.issue.number }}
+          Run   : ${{ github.run_id }}"
+          git push origin "$BRANCH"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 5. OPEN PR — create pull request with all artifacts
+  # ────────────────────────────────────────────────────────────────────────────
+  open-pr:
+    name: "5/5 · Open pull request"
+    needs: [setup, playwright-generation]
+    if: needs.playwright-generation.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    env:
+      TICKET_ID:    ${{ needs.setup.outputs.ticket-id }}
+      BRANCH:       ${{ needs.setup.outputs.branch }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build PR body
+        run: |
+          node scripts/ci-build-pr-body.js "$TICKET_ID" "$ISSUE_NUMBER" \
+            "${{ github.run_id }}" > pr_body.md
+
+      - name: Create pull request
+        id: create-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_URL=$(gh pr create \
+            --title "qa($TICKET_ID): analysis + tests · issue #$ISSUE_NUMBER" \
+            --body-file pr_body.md \
+            --base main \
+            --head "$BRANCH" \
+            --label "qa-automated,needs-review" \
+            --assignee "${{ github.event.issue.user.login }}" \
+            2>&1 | tail -1)
+          echo "pr-url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Link PR on issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL:   ${{ steps.create-pr.outputs.pr-url }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" \
+            --body "✅ **QA Pipeline complete** — pull request ready for review
+
+          → $PR_URL
+
+          **Next steps:**
+          1. Review \`tickets/$TICKET_ID/analysis.json\` — acceptance criteria, scenarios, risks.
+          2. Review generated spec files in \`tickets/$TICKET_ID/generated/\`.
+          3. If satisfied, copy \`analysis.json\` → \`approved-analysis.json\` and merge."
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 6. ESCALATION — notify humans when any stage fails
+  # ────────────────────────────────────────────────────────────────────────────
+  escalate:
+    name: "Escalate on failure"
+    needs: [setup, snapshot, requirement-analysis, playwright-generation, open-pr]
+    # Run only when something failed AND the pipeline was legitimately triggered
+    if: |
+      always() &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        github.event.label.name == 'qa-ready'
+      ) &&
+      (
+        needs.setup.result == 'failure' ||
+        needs.requirement-analysis.result == 'failure' ||
+        needs.playwright-generation.result == 'failure' ||
+        needs.open-pr.result == 'failure'
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Build failed-jobs list
+        id: info
+        run: |
+          FAILED=""
+          [[ "${{ needs.setup.result }}"                == "failure" ]] && FAILED="$FAILED \`setup\`"
+          [[ "${{ needs.snapshot.result }}"             == "failure" ]] && FAILED="$FAILED \`snapshot\`"
+          [[ "${{ needs.requirement-analysis.result }}" == "failure" ]] && FAILED="$FAILED \`requirement-analysis\`"
+          [[ "${{ needs.playwright-generation.result }}" == "failure" ]] && FAILED="$FAILED \`playwright-generation\`"
+          [[ "${{ needs.open-pr.result }}"              == "failure" ]] && FAILED="$FAILED \`open-pr\`"
+          echo "failed-jobs=$FAILED" >> "$GITHUB_OUTPUT"
+
+      - name: Comment escalation on issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" \
+            --body "⚠️ **QA Pipeline needs human intervention**
+
+          **Failed stages:**${{ steps.info.outputs.failed-jobs }}
+
+          **Workflow run:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          **To retry:** Remove the \`qa-ready\` label, re-add \`qa-pending\`, then re-add \`qa-ready\` — or use the manual *Run workflow* dispatch from the Actions tab.
+          **To debug:** Check the workflow logs linked above for the exact error.
+
+          A maintainer has been notified via the \`escalation-needed\` label."
+
+      - name: Add escalation-needed label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Label must exist; if it doesn't, create it first in Settings → Labels.
+        run: |
+          gh issue edit "${{ github.event.issue.number }}" \
+            --add-label "escalation-needed" || true
