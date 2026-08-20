@@ -111,6 +111,7 @@ if (fs.existsSync(writeTokenLogScript)) {
         : fallbackAnalysisPath;
     const toolTelemetryPath = path.join('tickets', ticketId, 'logs', '.playwright-generator-tool-exec.json');
     const snapshotRefPath = path.join('tickets', ticketId, 'snapshot');
+    fs.mkdirSync(path.join(repoRoot, 'tickets', ticketId, 'logs'), { recursive: true });
     fs.writeFileSync(path.join(repoRoot, toolTelemetryPath), `${JSON.stringify(toolExecution, null, 2)}\n`, 'utf8');
 
     spawnSync(

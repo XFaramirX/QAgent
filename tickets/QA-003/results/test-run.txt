@@ -1,0 +1,10 @@
+
+Running 5 tests using 1 worker
+
+  ✓  1 generated\qa-003-simple-text-input-validation.spec.ts:12:9 › QA-003 - Simple text input field — submit & validation › TS-001: page load shows a visible labeled text input (1.2s)
+  ✓  2 generated\qa-003-simple-text-input-validation.spec.ts:20:9 › QA-003 - Simple text input field — submit & validation › TS-002: submitting a non-empty value shows a success message containing the value (1.4s)
+  ✓  3 generated\qa-003-simple-text-input-validation.spec.ts:33:9 › QA-003 - Simple text input field — submit & validation › TS-003: submitting an empty field does not show a success message (1.1s)
+  ✓  4 generated\qa-003-simple-text-input-validation.spec.ts:48:9 › QA-003 - Simple text input field — submit & validation › TS-004: input is accessible by role and label (1.1s)
+  ✓  5 generated\qa-003-simple-text-input-validation.spec.ts:62:9 › QA-003 - Simple text input field — submit & validation › TS-005: keyboard-only submission flow works end to end (1.6s)
+
+  5 passed (7.3s)
