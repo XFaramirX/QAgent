@@ -104,7 +104,7 @@ The project integrates with Copilot agents to:
 
 For detailed documentation on each component, refer to the respective folders and configuration files.
 
-You can also used PR stacks from github to deliver new features.
+You can also used PR stacks from github to deliver new features. github/gh-stack
 
 ---
 
